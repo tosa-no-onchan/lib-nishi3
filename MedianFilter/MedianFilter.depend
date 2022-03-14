@@ -1,0 +1,23 @@
+# depslib dependency file v1.0
+1535489611 source:/home/matt/cpp_sandbox/median_filter/main.cpp
+	<iostream>
+	"MedianFilter.hpp"
+
+1535489170 source:/home/matt/cpp_sandbox/median_filter/MedianFilter.cpp
+	<iostream>
+	<stdlib.h>
+	"MedianFilter.hpp"
+
+1535490406 /home/matt/cpp_sandbox/median_filter/MedianFilter.hpp
+
+1549811187 source:/home/matt/cpp_sandbox/MedianFilter/main.cpp
+	<iostream>
+	"MedianFilter.hpp"
+
+1549810611 /home/matt/cpp_sandbox/MedianFilter/MedianFilter.hpp
+
+1549810799 source:/home/matt/cpp_sandbox/MedianFilter/MedianFilter.cpp
+	<iostream>
+	<stdlib.h>
+	"MedianFilter.hpp"
+
