@@ -12,7 +12,8 @@
 // add by nishi
 #define ICM20948_IMU
 #define USE_SPARK_LIB
-//#define USE_ACC_GRYO_NISHI
+#define USE_ACC_NISHI
+//#define USE_GRYO_NISHI
 #define USE_DMP_NISHI
 
 // add by nishi 2021.10.7
@@ -71,6 +72,7 @@ public:
 	int16_t  accADC_BD[3];	// add by nishi from ICM-20948
 	int16_t  accRAW[3];
 	int16_t	 accZero[3];
+	int32_t	 accZeroSum;
 	float    accIMZero;			// add by nishi acc 内積
 
 	//int16_t  magADC[3];

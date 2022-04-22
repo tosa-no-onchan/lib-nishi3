@@ -32,7 +32,11 @@
 #define IMU_ERR_I2C		0x01
 
 // IMU による、位置の計算
-//#define USE_IMU_DIST
+#define USE_IMU_DIST
+
+struct CB{
+  double dt[3][3];
+};
 
 class cIMU
 {
@@ -68,6 +72,13 @@ public:
 
   float tf_dlt[3];
   float v_acc[3];
+  float v_acc_pre[3];
+
+  int16_t cali_tf;
+
+  float adjust[3];
+
+  CB cb;
 
 public:
 	cIMU();
@@ -80,13 +91,16 @@ public:
 
   void QuaternionToEulerAngles(double q0, double q1, double q2, double q3,
                              double& roll, double& pitch, double& yaw);
+  void CB2XYZ(float q[4],double *xyz);
+  void compCB(float q[4],CB *cb);
 
 
 private:
   Madgwick filter;
 
   uint32_t update_hz;
-  uint32_t update_us;
+  //uint32_t update_us;
+  unsigned long update_us;
 
 	void computeIMU( void );
 
@@ -101,7 +115,7 @@ private:
 
   #endif
 
-  void computeTF( void);
+  void computeTF(unsigned long process_time);
   void compCBvBdt(float q[4],float vB[3],double dt,double *Pn);
 
 };

@@ -304,7 +304,7 @@ bool cICM20948::init( void )
   myICM.lowPower(false);
 
   // Gyro and Acc を使う
-  #ifdef USE_ACC_GRYO_NISHI
+  #if defined(USE_ACC_NISHI) || defined(USE_GRYO_NISHI)
 
   // The next few configuration functions accept a bit-mask of sensors for which the settings should be applied.
 
@@ -322,9 +322,9 @@ bool cICM20948::init( void )
   ICM_20948_fss_t myFSS; // This uses a "Full Scale Settings" structure that can contain values for all configurable sensors
 
   //myFSS.a = gpm2; // (ICM_20948_ACCEL_CONFIG_FS_SEL_e)
-                  // gpm2
-                  // gpm4
-  myFSS.a = gpm8;                // gpm8
+                 // gpm2
+  myFSS.a = gpm4;                // gpm4
+                  // gpm8
                   // gpm16
 
 
@@ -345,11 +345,11 @@ bool cICM20948::init( void )
   // Set up Digital Low-Pass Filter configuration
   ICM_20948_dlpcfg_t myDLPcfg;    // Similar to FSS, this uses a configuration structure for the desired sensors
   //myDLPcfg.a = acc_d473bw_n499bw; // (ICM_20948_ACCEL_CONFIG_DLPCFG_e)
-  myDLPcfg.a = acc_d246bw_n265bw;     // acc_d246bw_n265bw      - means 3db bandwidth is 246 hz and nyquist bandwidth is 265 hz
+  //myDLPcfg.a = acc_d246bw_n265bw;     // acc_d246bw_n265bw      - means 3db bandwidth is 246 hz and nyquist bandwidth is 265 hz
   //myDLPcfg.a = acc_d111bw4_n136bw;   // acc_d111bw4_n136bw
   //myDLPcfg.a = acc_d50bw4_n68bw8; // acc_d50bw4_n68bw8
   //myDLPcfg.a = acc_d23bw9_n34bw4;  // acc_d23bw9_n34bw4
-  //myDLPcfg.a =  acc_d11bw5_n17bw;  // acc_d11bw5_n17bw
+  myDLPcfg.a =  acc_d11bw5_n17bw;  // acc_d11bw5_n17bw
   //myDLPcfg.a =  acc_d5bw7_n8bw3;  // acc_d5bw7_n8bw3        - means 3 db bandwidth is 5.7 hz and nyquist bandwidth is 8.3 hz
                                   // acc_d473bw_n499bw
 
@@ -967,7 +967,6 @@ void cICM20948::acc_get_adc( void )
 }
 #endif
 
-
 /*
 * get Average of Acc value
 * from start to 512 
@@ -982,18 +981,19 @@ void cICM20948::acc_common()
     calibratingA++;
     if(calibratingA >= 800){
       if(calibratingA == 800){
-        a[0]=0;
-        a[1]=0;
-        a[2]=0;
+        //a[0]=0;
+        //a[1]=0;
+        //a[2]=0;
       }
-			a[0] += accADC[0];             // Sum up 512 readings
-			a[1] += accADC[1];             // Sum up 512 readings
-			a[2] += accADC[2];             // Sum up 512 readings
+			//a[0] += accADC[0];             // Sum up 512 readings
+			//a[1] += accADC[1];             // Sum up 512 readings
+			//a[2] += accADC[2];             // Sum up 512 readings
 
       if(calibratingA >= 1600){
-        accZero[0] = a[0] / 800;
-        accZero[1] = a[1] / 800;
-        accZero[2] = a[2] / 800;
+        //accZero[0] = a[0] / 800;
+        //accZero[1] = a[1] / 800;
+        //accZero[2] = a[2] / 800;
+        //accZeroSum=accZero[0]+accZero[1]+accZero[2];
 
         // 此処で、acc の内積を出す。
         //accIMZero = sqrt(accZero[0] * accZero[0] + accZero[1] * accZero[1] + accZero[2] * accZero[2]);
@@ -1002,14 +1002,13 @@ void cICM20948::acc_common()
 
         calibratingA_f=1;
         calibratingA=0;
-
       }
     }
   }
 
-  accADC[ROLL]  -=  accZero[ROLL] ;
-  accADC[PITCH] -=  accZero[PITCH];
-  accADC[YAW]   -=  accZero[YAW] ;
+  //accADC[ROLL]  -=  accZero[ROLL] ;
+  //accADC[PITCH] -=  accZero[PITCH];
+  //accADC[YAW]   -=  accZero[YAW] ;
 }
 
 
@@ -1424,45 +1423,27 @@ bool cICM20948::dmp_get_adc(){
       double q3 = ((double)data.Quat6.Data.Q3) / 1073741824.0; // Convert to double. Divide by 2^30  -- Z
       //double q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));    //  -- W    こいつが、バグとの事。
 
-      //#define XTX2
-      #if defined(XTX2)
-      double q0=1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3));
-      if(q0 >= 0.0){
-        q0 = sqrt(q0);
-        if(q0 >= 1.0)
-          q0 -=1.0;
-      }
-      else{
-        q0 = sqrt(q0 * -1.0) * -1.0;
-        if (q0 <= -1.0){
-          q0 +=1.0;
-        }
-      }
-      #endif
-      #define XTX1
-      #if defined(XTX1)
       double q0=1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3));
       if(q0 >= 0.0) q0 = sqrt(q0);
       else q0 = sqrt(q0 * -1.0) * -1.0;
-      #endif
 
       if(!isnan(q0)){
         if(calibratingD_f == 0){
           calibratingD++;
-          if(calibratingD >= 800){
-            if(calibratingD == 800){
-              d[1]=data.Quat6.Data.Q1;
-              d[2]=data.Quat6.Data.Q2;
-              d[3]=data.Quat6.Data.Q3;
+          if(calibratingD >= 200){
+            if(calibratingD == 200){
+              //d[1]=data.Quat6.Data.Q1;
+              //d[2]=data.Quat6.Data.Q2;
+              //d[3]=data.Quat6.Data.Q3;
             }
-            d[1] += data.Quat6.Data.Q1;             // Sum up 512 readings
-            d[2] += data.Quat6.Data.Q2;             // Sum up 512 readings
-            d[3] += data.Quat6.Data.Q3;             // Sum up 512 readings
+            //d[1] += data.Quat6.Data.Q1;             // Sum up 512 readings
+            //d[2] += data.Quat6.Data.Q2;             // Sum up 512 readings
+            //d[3] += data.Quat6.Data.Q3;             // Sum up 512 readings
 
             if(calibratingD >= 1600){
-              //quatZero[1] = d[1] / 800;
-              //quatZero[2] = d[2] / 800;
-              quatZero[3] = d[3] / 800;   // z だけキャリブレーションする。
+              //quatZero[1] = d[1] / 300;
+              //quatZero[2] = d[2] / 300;
+              //quatZero[3] = d[3] / 300;   // z だけキャリブレーションする。
 
               // 此処で、acc の内積を出す。
               //accIMZero = sqrt(accZero[0] * accZero[0] + accZero[1] * accZero[1] + accZero[2] * accZero[2]);
@@ -1474,23 +1455,22 @@ bool cICM20948::dmp_get_adc(){
             }
           }
         }
-        quatRAW[1] = data.Quat6.Data.Q1 - quatZero[1];
-        quatRAW[2] = data.Quat6.Data.Q2 - quatZero[2];
-        quatRAW[3] = data.Quat6.Data.Q3 - quatZero[3];
+        //quatRAW[1] = data.Quat6.Data.Q1 - quatZero[1];
+        //quatRAW[2] = data.Quat6.Data.Q2 - quatZero[2];
+        //quatRAW[3] = data.Quat6.Data.Q3 - quatZero[3];
 
-        q1 = ((double)quatRAW[1]) / 1073741824.0; // Convert to double. Divide by 2^30  -- X
-        q2 = ((double)quatRAW[2]) / 1073741824.0; // Convert to double. Divide by 2^30  -- Y
-        q3 = ((double)quatRAW[3]) / 1073741824.0; // Convert to double. Divide by 2^30  -- Z
+        //q1 = ((double)quatRAW[1]) / 1073741824.0; // Convert to double. Divide by 2^30  -- X
+        //q2 = ((double)quatRAW[2]) / 1073741824.0; // Convert to double. Divide by 2^30  -- Y
+        //q3 = ((double)quatRAW[3]) / 1073741824.0; // Convert to double. Divide by 2^30  -- Z
 
-        q0=1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3));
-        if(q0 >= 0.0) q0 = sqrt(q0);
-        else q0 = sqrt(q0 * -1.0) * -1.0;
+        //q0=1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3));
+        //if(q0 >= 0.0) q0 = sqrt(q0);
+        //else q0 = sqrt(q0 * -1.0) * -1.0;
 
         quat[0]=q0; // W
         quat[1]=q1; // X
         quat[2]=q2; // Y
         quat[3]=q3; // Z
-
 
         rc=true;
 
