@@ -39,19 +39,70 @@ cICM20948::cICM20948()
 	calibratingA = 0;
   calibratingM = 0;
   bConnected   = false;
+
+  // ICM20948
+  // Full-Scale Range
+  //  ACCEL_FS=0  -> ±2 [G]
+  //  ACCEL_FS=1  -> ±4 [G]
+  //  ACCEL_FS=2  -> ±8 [G]
+  //  ACCEL_FS=3  -> ±16 [G]
+  // Sensitivity Scale Factor
+  //  ACCEL_FS=0 -> 16,384 [LSB/g]
+  //  ACCEL_FS=1 -> 8,192 [LSB/g]
+  //  ACCEL_FS=2 -> 4,096 [LSB/g]
+  //  ACCEL_FS=3 -> 2,048 [LSB/g]
+  // initial Tolerance
+  //  Component-level ±0.5[%]
+  // ZERO-G OUTPUT
+  //  Initial Tolerance Board-level, all axes ±50 [mg]
+  //aRes = 8.0/32768.0;      // 8g    16bit -> 8G
+
+  // ICM20948
+
+  // 2G       16384.0
+  // 4G       8192.0
+  // 8G       4096.0
+  // 16G      2048.0
+
+  //aRes = 9.80665/16384.0;    // 2g
+  //aRes = 9.80665/8192.0;     // 4g
+  //aRes = 9.80665/4096.0;     // 8g
+  //aRes = 9.80665/2048.0;     // 16g
+  aRes = 9.80665/ACC_MAX_G; 
+
+  gRes = 1.0/16.4;   // 2000dps
+  // org setting
+  // gRes = 2000.0/32768.0;   // 2000dps   -> 0.06103515625
+  // gx = (float)SEN.gyroADC[0]*gRes;
+
+  mRes = 0.15; // Sensitivity Scale Factor = 0.15
+
+  // ACC Z 軸の Zero 調整
+  // Z 軸の停止時の中心が、 0 になるように調整します。
+  #if defined(USE_ACC_2G)
+    //zero_off = 0.9;
+    zero_off = 10.0*15.0;   // with low pass filter 
+  #elif defined(USE_ACC_4G)
+    zero_off = -0.1;
+  #else
+    zero_off = 0.15;   // +
+    //zero_off = 0.12;   // +-+
+    //zero_off = 0.1;    // -
+  #endif
+
 }
 
 void cICM20948::selectBank(uint8_t bank)
 {
-#ifndef USE_SPARK_LIB
-  digitalWrite( BDPIN_SPI_CS_IMU, LOW);
+  #ifndef USE_SPARK_LIB
+    digitalWrite( BDPIN_SPI_CS_IMU, LOW);
 
-  /* clear R/W bit - write, send the address */
-  MPU_SPI.write((uint8_t)ICM20948_REG_BANK_SEL);
-  MPU_SPI.write((uint8_t)(bank << 4));
- 
-  digitalWrite( BDPIN_SPI_CS_IMU, HIGH);
-#endif
+    /* clear R/W bit - write, send the address */
+    MPU_SPI.write((uint8_t)ICM20948_REG_BANK_SEL);
+    MPU_SPI.write((uint8_t)(bank << 4));
+  
+    digitalWrite( BDPIN_SPI_CS_IMU, HIGH);
+  #endif
 }
 
 void cICM20948::spiRead(uint16_t addr, uint8_t *p_data, uint32_t length)
@@ -62,19 +113,18 @@ void cICM20948::spiRead(uint16_t addr, uint8_t *p_data, uint32_t length)
   reg_addr = (uint8_t) (addr & 0x7F);
   bank = (uint8_t) (addr >> 7);
 
-#ifndef USE_SPARK_LIB
+  #ifndef USE_SPARK_LIB
+    selectBank(bank);
 
-  selectBank(bank);
-
-  digitalWrite( BDPIN_SPI_CS_IMU, LOW);
- 
-  MPU_SPI.transfer(0x80 | reg_addr);
-  //MPU_SPI.transfer(NULL, (void *)p_data, (size_t)length);
-  // update by nishi
-  MPU_SPI.transferBytes(NULL, (uint8_t *)p_data, (size_t)length);
- 
-  digitalWrite( BDPIN_SPI_CS_IMU, HIGH);
-#endif
+    digitalWrite( BDPIN_SPI_CS_IMU, LOW);
+  
+    MPU_SPI.transfer(0x80 | reg_addr);
+    //MPU_SPI.transfer(NULL, (void *)p_data, (size_t)length);
+    // update by nishi
+    MPU_SPI.transferBytes(NULL, (uint8_t *)p_data, (size_t)length);
+  
+    digitalWrite( BDPIN_SPI_CS_IMU, HIGH);
+  #endif
 }
 
 uint8_t cICM20948::spiReadByte(uint16_t addr)
@@ -94,18 +144,16 @@ void cICM20948::spiWriteByte(uint16_t addr, uint8_t data)
   reg_addr = (uint8_t) (addr & 0x7F);
   bank = (uint8_t) (addr >> 7);
 
-#ifndef USE_SPARK_LIB
+  #ifndef USE_SPARK_LIB
+    selectBank(bank);
+    digitalWrite( BDPIN_SPI_CS_IMU, LOW); 
 
-  selectBank(bank);
- 
-  digitalWrite( BDPIN_SPI_CS_IMU, LOW); 
-
-  MPU_SPI.transfer(reg_addr);
-  MPU_SPI.transfer(data);
- 
-  digitalWrite( BDPIN_SPI_CS_IMU, HIGH); 
-  //delay(1);
-#endif
+    MPU_SPI.transfer(reg_addr);
+    MPU_SPI.transfer(data);
+  
+    digitalWrite( BDPIN_SPI_CS_IMU, HIGH); 
+    //delay(1);
+  #endif
 }
 
 
@@ -130,18 +178,17 @@ void cICM20948::spiWrite(uint16_t addr, uint8_t *data, uint32_t length)
   uint32_t i;
 
   #ifndef USE_SPARK_LIB
+    selectBank(bank);
 
-  selectBank(bank);
+    digitalWrite( BDPIN_SPI_CS_IMU, LOW);
+    MPU_SPI.transfer( reg_addr );
 
-  digitalWrite( BDPIN_SPI_CS_IMU, LOW);
-  MPU_SPI.transfer( reg_addr );
-
-  for( i=0; i<length; i++ )
-  {
-    MPU_SPI.transfer( data[i] );
-  }
-  digitalWrite( BDPIN_SPI_CS_IMU, HIGH);
-  delay(1);
+    for( i=0; i<length; i++ )
+    {
+      MPU_SPI.transfer( data[i] );
+    }
+    digitalWrite( BDPIN_SPI_CS_IMU, HIGH);
+    delay(1);
   #endif
 }
 
@@ -149,6 +196,7 @@ void cICM20948::spiWrite(uint16_t addr, uint8_t *data, uint32_t length)
 #ifdef USE_SPARK_LIB
 bool cICM20948::begin()
 {
+  int cnt;
   uint8_t data;
   // test by nishi MOSI(23) Pull UP 2023.12.13
   //pinMode(23,INPUT_PULLUP);
@@ -159,9 +207,9 @@ bool cICM20948::begin()
 
 
   bool initialized = false;
+  cnt = 2;
   while (!initialized)
   {
-
     myICM.begin(CS_PIN, MPU_SPI);
 
     SERIAL_PORT.print(F("Initialization of the sensor returned: "));
@@ -172,6 +220,10 @@ bool cICM20948::begin()
       delay(500);
       //SERIAL_PORT.println("please Ent!");
       //WAITFORINPUT()
+      cnt--;
+      if(cnt <=0){
+        return false;
+      }
     }
     else
     {
@@ -229,7 +281,18 @@ bool cICM20948::begin()
   //MPU_SPI.setDataMode( SPI_MODE3 );
   MPU_SPI.setDataMode( SPI_MODE0 );   // changed by nishi
   MPU_SPI.setBitOrder( MSBFIRST );
-  MPU_SPI.setClockDivider( SPI_CLOCK_DIV128 ); // 108Mhz/128 = 0.8MHz
+
+  // Limit SPI frequency to 7MHz みたい。
+  //#define SPI_CLOCK_DIV2    0x00101001 //8 MHz
+  //#define SPI_CLOCK_DIV4    0x00241001 //4 MHz
+  //#define SPI_CLOCK_DIV8    0x004c1001 //2 MHz
+  //#define SPI_CLOCK_DIV16   0x009c1001 //1 MHz
+  //#define SPI_CLOCK_DIV32   0x013c1001 //500 KHz
+  //#define SPI_CLOCK_DIV64   0x027c1001 //250 KHz
+  //#define SPI_CLOCK_DIV128  0x04fc1001 //125 KHz
+
+  //MPU_SPI.setClockDivider( SPI_CLOCK_DIV128 ); // 108Mhz/128 = 0.8MHz  今までこちらを使用。
+  MPU_SPI.setClockDivider( SPI_CLOCK_DIV4 ); // changed by nishi 2022.5.2
   digitalWrite(BDPIN_SPI_CS_IMU, HIGH);
   //delay( 100 );
   delay( 300 );		// changed by nishi 2021.10.6
@@ -253,14 +316,21 @@ bool cICM20948::begin()
   // whoami = 0xEA  -> ICM20948
   if(whoami == ICM20948_DEVICE_ID)
   {
-    MPU_SPI.setClockDivider( SPI_CLOCK_DIV4 ); // 4MHz
+    // Limit SPI frequency to 7MHz みたい。
+    //MPU_SPI.setClockDivider( SPI_CLOCK_DIV4 ); // 4MHz  for ICM20948 これまで使用。 original
+
     bConnected = true;
     init();
-    gyro_init();
-    acc_init();
-    mag_init();
+    #if defined(USE_GRYO_NISHI)
+      gyro_init();
+    #endif
+    #if defined(USE_ACC_NISHI)
+      acc_init();
+    #endif
+    #if defined(USE_MAG)
+      mag_init();
+    #endif
 
-    //MPU_SPI.setClockDivider( SPI_CLOCK_DIV4 ); // 4MHz
   }
   // add by nishi
   else{
@@ -270,21 +340,17 @@ bool cICM20948::begin()
     //  delay(100);
     //}
   }
-
   return bConnected;
 }
 #endif
 
-
 #ifdef USE_SPARK_LIB
-bool cICM20948::init( void )
-{
+bool cICM20948::init( void ){
   uint8_t state;
   uint8_t data;
   uint8_t response[3] = {0, 0, 0};
 
   bool rc=true;
-
 
   // In this advanced example we'll cover how to do a more fine-grained setup of your sensor
   SERIAL_PORT.println("Device connected!");
@@ -306,214 +372,222 @@ bool cICM20948::init( void )
   // Gyro and Acc を使う
   #if defined(USE_ACC_NISHI) || defined(USE_GRYO_NISHI)
 
-  // The next few configuration functions accept a bit-mask of sensors for which the settings should be applied.
+    // The next few configuration functions accept a bit-mask of sensors for which the settings should be applied.
 
-  // Set Gyro and Accelerometer to a particular sample mode
-  // options: ICM_20948_Sample_Mode_Continuous
-  //          ICM_20948_Sample_Mode_Cycled
-  myICM.setSampleMode((ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr), ICM_20948_Sample_Mode_Continuous);
-  if (myICM.status != ICM_20948_Stat_Ok)
-  {
-    SERIAL_PORT.print(F("setSampleMode returned: "));
-    SERIAL_PORT.println(myICM.statusString());
-  }
+    // Set Gyro and Accelerometer to a particular sample mode
+    // options: ICM_20948_Sample_Mode_Continuous
+    //          ICM_20948_Sample_Mode_Cycled
+    myICM.setSampleMode((ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr), ICM_20948_Sample_Mode_Continuous);
+    if (myICM.status != ICM_20948_Stat_Ok)
+    {
+      SERIAL_PORT.print(F("setSampleMode returned: "));
+      SERIAL_PORT.println(myICM.statusString());
+      rc = false; // add by nishi 2022.4.23
+    }
 
-  // Set full scale ranges for both acc and gyr
-  ICM_20948_fss_t myFSS; // This uses a "Full Scale Settings" structure that can contain values for all configurable sensors
+    // Set full scale ranges for both acc and gyr
+    ICM_20948_fss_t myFSS; // This uses a "Full Scale Settings" structure that can contain values for all configurable sensors
 
-  //myFSS.a = gpm2; // (ICM_20948_ACCEL_CONFIG_FS_SEL_e)
-                 // gpm2
-  myFSS.a = gpm4;                // gpm4
+    //myFSS.a = gpm2; // (ICM_20948_ACCEL_CONFIG_FS_SEL_e)
+                  // gpm2
+                  // gpm4
                   // gpm8
                   // gpm16
+    #if defined(USE_ACC_2G)
+      myFSS.a = gpm2;  // gpm2
+    #elif defined(USE_ACC_4G)
+      myFSS.a = gpm4;  // gpm4
+    #else
+      myFSS.a = gpm8;  // gpm8
+    #endif
+
+    myFSS.g = dps2000; // (ICM_20948_GYRO_CONFIG_1_FS_SEL_e)
+                      // dps250
+                      // dps500
+                      // dps1000
+                      // dps2000
+
+    myICM.setFullScale((ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr), myFSS);
+    if (myICM.status != ICM_20948_Stat_Ok)
+    {
+      SERIAL_PORT.print(F("setFullScale returned: "));
+      SERIAL_PORT.println(myICM.statusString());
+      rc = false; // add by nishi 2022.4.23
+    }
 
 
-  myFSS.g = dps2000; // (ICM_20948_GYRO_CONFIG_1_FS_SEL_e)
-                    // dps250
-                    // dps500
-                    // dps1000
-                    // dps2000
+    // Set up Digital Low-Pass Filter configuration
+    ICM_20948_dlpcfg_t myDLPcfg;    // Similar to FSS, this uses a configuration structure for the desired sensors
+    //myDLPcfg.a = acc_d473bw_n499bw; // (ICM_20948_ACCEL_CONFIG_DLPCFG_e)
+    //myDLPcfg.a = acc_d246bw_n265bw;     // acc_d246bw_n265bw      - means 3db bandwidth is 246 hz and nyquist bandwidth is 265 hz
+    //myDLPcfg.a = acc_d111bw4_n136bw;   // acc_d111bw4_n136bw
+    //myDLPcfg.a = acc_d50bw4_n68bw8; // acc_d50bw4_n68bw8
+    //myDLPcfg.a = acc_d23bw9_n34bw4;  // acc_d23bw9_n34bw4
+    //myDLPcfg.a =  acc_d11bw5_n17bw;  // acc_d11bw5_n17bw
+    myDLPcfg.a =  acc_d5bw7_n8bw3;  // acc_d5bw7_n8bw3        - means 3 db bandwidth is 5.7 hz and nyquist bandwidth is 8.3 hz
+                                    // acc_d473bw_n499bw
 
-  myICM.setFullScale((ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr), myFSS);
-  if (myICM.status != ICM_20948_Stat_Ok)
-  {
-    SERIAL_PORT.print(F("setFullScale returned: "));
-    SERIAL_PORT.println(myICM.statusString());
-  }
+    //myDLPcfg.g = gyr_d361bw4_n376bw5; // (ICM_20948_GYRO_CONFIG_1_DLPCFG_e)
+                                      // gyr_d196bw6_n229bw8
+                                      // gyr_d151bw8_n187bw6
+                                      // gyr_d119bw5_n154bw3
+                                      // gyr_d51bw2_n73bw3
+                                      // gyr_d23bw9_n35bw9
+                                      // gyr_d11bw6_n17bw8
+    myDLPcfg.g = gyr_d5bw7_n8bw9;     // gyr_d5bw7_n8bw9
+                                      // gyr_d361bw4_n376bw5
 
+    myICM.setDLPFcfg((ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr), myDLPcfg);
+    //myICM.setDLPFcfg(ICM_20948_Internal_Acc , myDLPcfg);
+    if (myICM.status != ICM_20948_Stat_Ok){
+      SERIAL_PORT.print(F("setDLPcfg returned: "));
+      SERIAL_PORT.println(myICM.statusString());
+      rc = false; // add by nishi 2022.4.23
+    }
 
-  // Set up Digital Low-Pass Filter configuration
-  ICM_20948_dlpcfg_t myDLPcfg;    // Similar to FSS, this uses a configuration structure for the desired sensors
-  //myDLPcfg.a = acc_d473bw_n499bw; // (ICM_20948_ACCEL_CONFIG_DLPCFG_e)
-  //myDLPcfg.a = acc_d246bw_n265bw;     // acc_d246bw_n265bw      - means 3db bandwidth is 246 hz and nyquist bandwidth is 265 hz
-  //myDLPcfg.a = acc_d111bw4_n136bw;   // acc_d111bw4_n136bw
-  //myDLPcfg.a = acc_d50bw4_n68bw8; // acc_d50bw4_n68bw8
-  //myDLPcfg.a = acc_d23bw9_n34bw4;  // acc_d23bw9_n34bw4
-  myDLPcfg.a =  acc_d11bw5_n17bw;  // acc_d11bw5_n17bw
-  //myDLPcfg.a =  acc_d5bw7_n8bw3;  // acc_d5bw7_n8bw3        - means 3 db bandwidth is 5.7 hz and nyquist bandwidth is 8.3 hz
-                                  // acc_d473bw_n499bw
-
-  myDLPcfg.g = gyr_d361bw4_n376bw5; // (ICM_20948_GYRO_CONFIG_1_DLPCFG_e)
-                                    // gyr_d196bw6_n229bw8
-                                    // gyr_d151bw8_n187bw6
-                                    // gyr_d119bw5_n154bw3
-                                    // gyr_d51bw2_n73bw3
-                                    // gyr_d23bw9_n35bw9
-                                    // gyr_d11bw6_n17bw8
-                                    // gyr_d5bw7_n8bw9
-                                    // gyr_d361bw4_n376bw5
-
-  myICM.setDLPFcfg((ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr), myDLPcfg);
-  //myICM.setDLPFcfg(ICM_20948_Internal_Acc , myDLPcfg);
-  if (myICM.status != ICM_20948_Stat_Ok)
-  {
-    SERIAL_PORT.print(F("setDLPcfg returned: "));
-    SERIAL_PORT.println(myICM.statusString());
-  }
-
-  // Choose whether or not to use DLPF
-  // Here we're also showing another way to access the status values, and that it is OK to supply individual sensor masks to these functions
-  //ICM_20948_Status_e accDLPEnableStat = myICM.enableDLPF(ICM_20948_Internal_Acc, false);
-  ICM_20948_Status_e accDLPEnableStat = myICM.enableDLPF(ICM_20948_Internal_Acc, true);
-  ICM_20948_Status_e gyrDLPEnableStat = myICM.enableDLPF(ICM_20948_Internal_Gyr, true);
-  SERIAL_PORT.print(F("Enable DLPF for Accelerometer returned: "));
-  SERIAL_PORT.println(myICM.statusString(accDLPEnableStat));
-  SERIAL_PORT.print(F("Enable DLPF for Gyroscope returned: "));
-  SERIAL_PORT.println(myICM.statusString(gyrDLPEnableStat));
+    // Choose whether or not to use DLPF
+    // Here we're also showing another way to access the status values, and that it is OK to supply individual sensor masks to these functions
+    //ICM_20948_Status_e accDLPEnableStat = myICM.enableDLPF(ICM_20948_Internal_Acc, false);
+    ICM_20948_Status_e accDLPEnableStat = myICM.enableDLPF(ICM_20948_Internal_Acc, true);
+    //ICM_20948_Status_e gyrDLPEnableStat = myICM.enableDLPF(ICM_20948_Internal_Gyr, false);
+    ICM_20948_Status_e gyrDLPEnableStat = myICM.enableDLPF(ICM_20948_Internal_Gyr, true);
+    SERIAL_PORT.print(F("Enable DLPF for Accelerometer returned: "));
+    SERIAL_PORT.println(myICM.statusString(accDLPEnableStat));
+    SERIAL_PORT.print(F("Enable DLPF for Gyroscope returned: "));
+    SERIAL_PORT.println(myICM.statusString(gyrDLPEnableStat));
 
 
-  // Choose whether or not to start the magnetometer
-  myICM.startupMagnetometer();
-  if (myICM.status != ICM_20948_Stat_Ok)
-  {
-    SERIAL_PORT.print(F("startupMagnetometer returned: "));
-    SERIAL_PORT.println(myICM.statusString());
-  }
+    // Choose whether or not to start the magnetometer
+    #if defined(USE_MAG)
+      myICM.startupMagnetometer();
+      if (myICM.status != ICM_20948_Stat_Ok){
+        SERIAL_PORT.print(F("startupMagnetometer returned: "));
+        SERIAL_PORT.println(myICM.statusString());
+        rc = false; // add by nishi 2022.4.23
+      }
+    #endif
 
+    // test by nishi
+    myICM.setBank(2); // myICM.startupMagnetometer(); の後は、Bank が変わる。
+    uint8_t reg_my;
+    ICM_20948_Status_e rc_my = myICM.read(AGB2_REG_ACCEL_CONFIG, (uint8_t *)&reg_my, sizeof(reg_my));
+    SERIAL_PORT.print("reg_my=");
+    SERIAL_PORT.println(reg_my,HEX);
 
-  // test by nishi
-  myICM.setBank(2); // myICM.startupMagnetometer(); の後は、Bank が変わる。
-  uint8_t reg_my;
-  ICM_20948_Status_e rc_my = myICM.read(AGB2_REG_ACCEL_CONFIG, (uint8_t *)&reg_my, sizeof(reg_my));
-  SERIAL_PORT.print("reg_my=");
-  SERIAL_PORT.println(reg_my,HEX);
+    SERIAL_PORT.println();
+    SERIAL_PORT.println(F("Configuration complete!"));
 
+      // DEBUG by nishi
+      #ifdef DEBUG_NISHI_8
+      // bank0 USER_CTRL 0x03
+      myICM.setBank(0); // myICM.startupMagnetometer(); の後は、Bank が変わる。
+      rc_my = myICM.read(0x03, (uint8_t *)&data, sizeof(data));
+      SERIAL_PORT.print("USER_CTRL=");
+      SERIAL_PORT.println(data,HEX);
 
-  SERIAL_PORT.println();
-  SERIAL_PORT.println(F("Configuration complete!"));
-
-
-  // DEBUG by nishi
-  #ifdef DEBUG_NISHI_8
-  // bank0 USER_CTRL 0x03
-  myICM.setBank(0); // myICM.startupMagnetometer(); の後は、Bank が変わる。
-  rc_my = myICM.read(0x03, (uint8_t *)&data, sizeof(data));
-  SERIAL_PORT.print("USER_CTRL=");
-  SERIAL_PORT.println(data,HEX);
-
-  while(1){
-    delay(100);
-  }
-  #endif
-  //SERIAL_PORT.println("Please CR!");
-  //WAITFORINPUT();
-
+      while(1){
+        delay(100);
+      }
+      #endif
+    //SERIAL_PORT.println("Please CR!");
+    //WAITFORINPUT();
   #endif
 
   #ifdef USE_DMP_NISHI
-  /*
-  * add 9 axis fusion Quarternion with DMP3 start
-  * 注) ICM220948C.h の #define ICM_20948_USE_DMP を有効にしないといけない。
-  * 注2) 上記を、有効にすると、Magnet が取れなくなる。
-  */
+    /*
+    * add 9 axis fusion Quarternion with DMP3 start
+    * 注) ICM220948C.h の #define ICM_20948_USE_DMP を有効にしないといけない。
+    * 注2) 上記を、有効にすると、Magnet が取れなくなる。
+    */
 
-  bool success = true; // Use success to show if the DMP configuration was successful
+    bool success = true; // Use success to show if the DMP configuration was successful
 
-  //#define QUAT_ANIMATION
+    //#define QUAT_ANIMATION
 
-  // Initialize the DMP. initializeDMP is a weak function. You can overwrite it if you want to e.g. to change the sample rate
-  success &= (myICM.initializeDMP() == ICM_20948_Stat_Ok);
+    // Initialize the DMP. initializeDMP is a weak function. You can overwrite it if you want to e.g. to change the sample rate
+    success &= (myICM.initializeDMP() == ICM_20948_Stat_Ok);
 
-  // DMP sensor options are defined in ICM_20948_DMP.h
-  //    INV_ICM20948_SENSOR_ACCELEROMETER               (16-bit accel)
-  //    INV_ICM20948_SENSOR_GYROSCOPE                   (16-bit gyro + 32-bit calibrated gyro)
-  //    INV_ICM20948_SENSOR_RAW_ACCELEROMETER           (16-bit accel)
-  //    INV_ICM20948_SENSOR_RAW_GYROSCOPE               (16-bit gyro + 32-bit calibrated gyro)
-  //    INV_ICM20948_SENSOR_MAGNETIC_FIELD_UNCALIBRATED (16-bit compass)
-  //    INV_ICM20948_SENSOR_GYROSCOPE_UNCALIBRATED      (16-bit gyro)
-  //    INV_ICM20948_SENSOR_STEP_DETECTOR               (Pedometer Step Detector)
-  //    INV_ICM20948_SENSOR_STEP_COUNTER                (Pedometer Step Detector)
-  //    INV_ICM20948_SENSOR_GAME_ROTATION_VECTOR        (32-bit 6-axis quaternion)
-  //    INV_ICM20948_SENSOR_ROTATION_VECTOR             (32-bit 9-axis quaternion + heading accuracy)
-  //    INV_ICM20948_SENSOR_GEOMAGNETIC_ROTATION_VECTOR (32-bit Geomag RV + heading accuracy)
-  //    INV_ICM20948_SENSOR_GEOMAGNETIC_FIELD           (32-bit calibrated compass)
-  //    INV_ICM20948_SENSOR_GRAVITY                     (32-bit 6-axis quaternion)
-  //    INV_ICM20948_SENSOR_LINEAR_ACCELERATION         (16-bit accel + 32-bit 6-axis quaternion)
-  //    INV_ICM20948_SENSOR_ORIENTATION                 (32-bit 9-axis quaternion + heading accuracy)
+    // DMP sensor options are defined in ICM_20948_DMP.h
+    //    INV_ICM20948_SENSOR_ACCELEROMETER               (16-bit accel)
+    //    INV_ICM20948_SENSOR_GYROSCOPE                   (16-bit gyro + 32-bit calibrated gyro)
+    //    INV_ICM20948_SENSOR_RAW_ACCELEROMETER           (16-bit accel)
+    //    INV_ICM20948_SENSOR_RAW_GYROSCOPE               (16-bit gyro + 32-bit calibrated gyro)
+    //    INV_ICM20948_SENSOR_MAGNETIC_FIELD_UNCALIBRATED (16-bit compass)
+    //    INV_ICM20948_SENSOR_GYROSCOPE_UNCALIBRATED      (16-bit gyro)
+    //    INV_ICM20948_SENSOR_STEP_DETECTOR               (Pedometer Step Detector)
+    //    INV_ICM20948_SENSOR_STEP_COUNTER                (Pedometer Step Detector)
+    //    INV_ICM20948_SENSOR_GAME_ROTATION_VECTOR        (32-bit 6-axis quaternion)
+    //    INV_ICM20948_SENSOR_ROTATION_VECTOR             (32-bit 9-axis quaternion + heading accuracy)
+    //    INV_ICM20948_SENSOR_GEOMAGNETIC_ROTATION_VECTOR (32-bit Geomag RV + heading accuracy)
+    //    INV_ICM20948_SENSOR_GEOMAGNETIC_FIELD           (32-bit calibrated compass)
+    //    INV_ICM20948_SENSOR_GRAVITY                     (32-bit 6-axis quaternion)
+    //    INV_ICM20948_SENSOR_LINEAR_ACCELERATION         (16-bit accel + 32-bit 6-axis quaternion)
+    //    INV_ICM20948_SENSOR_ORIENTATION                 (32-bit 9-axis quaternion + heading accuracy)
 
-  // Enable the DMP orientation sensor
-  #ifndef IMU_SENSER6
-  success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_ORIENTATION) == ICM_20948_Stat_Ok);   // original  2021.11.11
-  //success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_ROTATION_VECTOR) == ICM_20948_Stat_Ok);   // test 2
-  #else
-  //success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_GRAVITY) == ICM_20948_Stat_Ok);   // test 3
-  success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_GAME_ROTATION_VECTOR) == ICM_20948_Stat_Ok);   // test 4
+    // Enable the DMP orientation sensor
+    #ifndef IMU_SENSER6
+      success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_ORIENTATION) == ICM_20948_Stat_Ok);   // original  2021.11.11
+      //success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_ROTATION_VECTOR) == ICM_20948_Stat_Ok);   // test 2
+    #else
+      //success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_GRAVITY) == ICM_20948_Stat_Ok);   // test 3
+      success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_GAME_ROTATION_VECTOR) == ICM_20948_Stat_Ok);   // test 4
+    #endif
+
+    // Enable any additional sensors / features
+    //success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_RAW_GYROSCOPE) == ICM_20948_Stat_Ok);
+    //success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_RAW_ACCELEROMETER) == ICM_20948_Stat_Ok);
+    //success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_MAGNETIC_FIELD_UNCALIBRATED) == ICM_20948_Stat_Ok);
+
+    // Configuring DMP to output data at multiple ODRs:
+    // DMP is capable of outputting multiple sensor data at different rates to FIFO.
+    // Setting value can be calculated as follows:
+    // Value = (DMP running rate / ODR ) - 1
+    // E.g. For a 5Hz ODR rate when DMP is running at 55Hz, value = (55/5) - 1 = 10.
+    #ifndef IMU_SENSER6
+      success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Quat9, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+      //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Accel, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+      //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Gyro, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+      //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Gyro_Calibr, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+      //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Cpass, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+      //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Cpass_Calibr, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+    #else
+      success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Quat6, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+      //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Accel, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+      //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Gyro, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+      //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Gyro_Calibr, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+      //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Cpass, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+      //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Cpass_Calibr, 0) == ICM_20948_Stat_Ok); // Set to the maximum
+    #endif
+
+    // Enable the FIFO
+    success &= (myICM.enableFIFO() == ICM_20948_Stat_Ok);
+
+    // Enable the DMP
+    success &= (myICM.enableDMP() == ICM_20948_Stat_Ok);
+
+    // Reset DMP
+    success &= (myICM.resetDMP() == ICM_20948_Stat_Ok);
+
+    // Reset FIFO
+    success &= (myICM.resetFIFO() == ICM_20948_Stat_Ok);
+
+    // Check success
+    if (success)
+    {
+      #ifndef QUAT_ANIMATION
+        SERIAL_PORT.println(F("DMP enabled!"));
+      #endif
+    }
+    else
+    {
+      rc=false;
+      SERIAL_PORT.println(F("Enable DMP failed!"));
+      SERIAL_PORT.println(F("Please check that you have uncommented line 29 (#define ICM_20948_USE_DMP) in ICM_20948_C.h..."));
+      //while (1)
+      //  ; // Do nothing more
+    }
   #endif
 
-  // Enable any additional sensors / features
-  //success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_RAW_GYROSCOPE) == ICM_20948_Stat_Ok);
-  //success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_RAW_ACCELEROMETER) == ICM_20948_Stat_Ok);
-  //success &= (myICM.enableDMPSensor(INV_ICM20948_SENSOR_MAGNETIC_FIELD_UNCALIBRATED) == ICM_20948_Stat_Ok);
-
-  // Configuring DMP to output data at multiple ODRs:
-  // DMP is capable of outputting multiple sensor data at different rates to FIFO.
-  // Setting value can be calculated as follows:
-  // Value = (DMP running rate / ODR ) - 1
-  // E.g. For a 5Hz ODR rate when DMP is running at 55Hz, value = (55/5) - 1 = 10.
-  #ifndef IMU_SENSER6
-  success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Quat9, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Accel, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Gyro, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Gyro_Calibr, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Cpass, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Cpass_Calibr, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  #else
-  success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Quat6, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Accel, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Gyro, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Gyro_Calibr, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Cpass, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  //success &= (myICM.setDMPODRrate(DMP_ODR_Reg_Cpass_Calibr, 0) == ICM_20948_Stat_Ok); // Set to the maximum
-  #endif
-
-  // Enable the FIFO
-  success &= (myICM.enableFIFO() == ICM_20948_Stat_Ok);
-
-  // Enable the DMP
-  success &= (myICM.enableDMP() == ICM_20948_Stat_Ok);
-
-  // Reset DMP
-  success &= (myICM.resetDMP() == ICM_20948_Stat_Ok);
-
-  // Reset FIFO
-  success &= (myICM.resetFIFO() == ICM_20948_Stat_Ok);
-
-  // Check success
-  if (success)
-  {
-#ifndef QUAT_ANIMATION
-    SERIAL_PORT.println(F("DMP enabled!"));
-#endif
-  }
-  else
-  {
-    rc=false;
-    SERIAL_PORT.println(F("Enable DMP failed!"));
-    SERIAL_PORT.println(F("Please check that you have uncommented line 29 (#define ICM_20948_USE_DMP) in ICM_20948_C.h..."));
-    //while (1)
-    //  ; // Do nothing more
-  }
-  #endif
   // end
   return rc;
 }
@@ -537,27 +611,36 @@ bool cICM20948::init( void )
 	delay(1);
 
 	//ICM20948 Gyro 
-
+  // Gyro set GYRO_CONFIG_1
 	// Set Full Scale Gyro Range
   data = ICM20948_GYRO_FULLSCALE_2000DPS;
   // Set Gyro DLPF
-  data |= ICM20948_GYRO_BW_51HZ;
+  //data |= ICM20948_GYRO_BW_51HZ;
+  data |= ICM20948_GYRO_BW_6HZ;     // changed by nishi 2022.4.30
   spiWriteByte(ICM20948_REG_GYRO_CONFIG_1, data);
 	delay(1);
 
 	//ICM20948 Accel
-	
-  // Set Full Scale Accel Range
-  data = ICM20948_ACCEL_FULLSCALE_2G;
+	// Set Full Scale Accel Range
+  #if defined(USE_ACC_2G)
+    data = ICM20948_ACCEL_FULLSCALE_2G;
+  #elif defined(USE_ACC_4G)
+    data = ICM20948_ACCEL_FULLSCALE_4G;   // changed by nishi 2022.4.30
+  #else
+    data = ICM20948_ACCEL_FULLSCALE_8G;
+  #endif
+
   // Set Accel DLPF
-  data |= ICM20948_ACCEL_BW_50HZ;
+  //data |= ICM20948_ACCEL_BW_50HZ;
+  data |= ICM20948_ACCEL_BW_6HZ;        // changed by nishi 2022.4.30
   spiWriteByte(ICM20948_REG_ACCEL_CONFIG, data);
 	delay(1);
 
-  AK09916_init();
+  #if defined(USE_MAG)
+    AK09916_init();
+  #endif
   return rc;
 }
-
 
 void cICM20948::AK09916_init(bool minimal){
 	//////////////////////////////////////////////////////////////////////////
@@ -599,19 +682,18 @@ void cICM20948::AK09916_init(bool minimal){
 
   //#define TEST_X_1
   #ifdef TEST_X_1
-  // mag who am i
-  //ICM_20948_i2c_controller_periph4_txn(uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len, bool Rw, bool send_reg_addr);
-  data=0;
-  rc2=ICM_20948_i2c_controller_periph4_txn(ICM20948_AK09916_I2C_ADDR, ICM20948_AK09916_WIA, &data, 1, true, true);
-  SERIAL_PORT.print("cICM20948::AK09916_init() #19  rc2=");
-  SERIAL_PORT.println(rc2);
-  SERIAL_PORT.print("ICM20948_AK09916_WIA=");
-  SERIAL_PORT.println(data,HEX);
-  while(1){
-    delay(100);
-  }
+    // mag who am i
+    //ICM_20948_i2c_controller_periph4_txn(uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len, bool Rw, bool send_reg_addr);
+    data=0;
+    rc2=ICM_20948_i2c_controller_periph4_txn(ICM20948_AK09916_I2C_ADDR, ICM20948_AK09916_WIA, &data, 1, true, true);
+    SERIAL_PORT.print("cICM20948::AK09916_init() #19  rc2=");
+    SERIAL_PORT.println(rc2);
+    SERIAL_PORT.print("ICM20948_AK09916_WIA=");
+    SERIAL_PORT.println(data,HEX);
+    while(1){
+      delay(100);
+    }
   #endif
-
 
 	//resetMag()
 	//imu_spi_ak8963_write(MPU9250_AK8963_I2C_ADDR, MPU9250_AK8963_CNTL2, MPU9250_AK8963_CNTL2_SRST);
@@ -672,49 +754,44 @@ void cICM20948::AK09916_init(bool minimal){
 	//imu_spi_ak8963_write(MPU9250_AK8963_I2C_ADDR, MPU9250_AK8963_CNTL, MPU9250_AK8963_POWER_DOWN);
   //delay(1);
 
-
   //#define TEST_NISHI_Y2
   #ifdef TEST_NISHI_Y2
+    // ここは、ICM_20948_C.c ICM_20948_i2c_controller_configure_peripheral() を真似します。
+    // でも、うまくいきません。
 
-  // ここは、ICM_20948_C.c ICM_20948_i2c_controller_configure_peripheral() を真似します。
-  // でも、うまくいきません。
+    //uint8_t periph_addr_reg;
+    //uint8_t periph_reg_reg;
+    //uint8_t periph_ctrl_reg;
+    //uint8_t periph_do_reg;
 
-  //uint8_t periph_addr_reg;
-  //uint8_t periph_reg_reg;
-  //uint8_t periph_ctrl_reg;
-  //uint8_t periph_do_reg;
+    //periph_addr_reg = ICM20948_REG_I2C_SLV0_ADDR;
+    //periph_reg_reg = ICM20948_REG_I2C_SLV0_REG;
+    //periph_ctrl_reg = ICM20948_REG_I2C_SLV0_CTRL;
+    //periph_do_reg = ICM20948_REG_I2C_SLV0_DO;
 
-  //periph_addr_reg = ICM20948_REG_I2C_SLV0_ADDR;
-  //periph_reg_reg = ICM20948_REG_I2C_SLV0_REG;
-  //periph_ctrl_reg = ICM20948_REG_I2C_SLV0_CTRL;
-  //periph_do_reg = ICM20948_REG_I2C_SLV0_DO;
+    // 1. Set the peripheral address and the Rw flag
+    // AK09916_I2C_ADDR(0x0C) + Read Flag = 0x8C
+    spiWriteByte(ICM20948_REG_I2C_SLV0_ADDR, ICM20948_AK09916_I2C_ADDR | ICM20948_I2C_READ);
+    delay(1);
+  
+    // 2. Set the peripheral sub-address (register address)
+    // reg : ST1(0x10)
+    spiWriteByte(ICM20948_REG_I2C_SLV0_REG, ICM20948_AK09916_ST1);
+    delay(1);
 
-  // 1. Set the peripheral address and the Rw flag
-  // AK09916_I2C_ADDR(0x0C) + Read Flag = 0x8C
-	spiWriteByte(ICM20948_REG_I2C_SLV0_ADDR, ICM20948_AK09916_I2C_ADDR | ICM20948_I2C_READ);
-	delay(1);
+    // 3.Set up the control info
+    //ICM_20948_I2C_PERIPHX_CTRL_t ctrl;
+    //ctrl.LENG = len; -> 9
+    //ctrl.EN = enable;  -> true
+    //ctrl.REG_DIS = data_only; -> false
+    //ctrl.GRP = grp; -> false
+    //ctrl.BYTE_SW = swap;  -> false
+    spiWriteByte(ICM20948_REG_I2C_SLV0_CTRL, 0x89);
+    delay(1);
 
- 
-  // 2. Set the peripheral sub-address (register address)
-  // reg : ST1(0x10)
-	spiWriteByte(ICM20948_REG_I2C_SLV0_REG, ICM20948_AK09916_ST1);
-	delay(1);
-
-  // 3.Set up the control info
-  //ICM_20948_I2C_PERIPHX_CTRL_t ctrl;
-  //ctrl.LENG = len; -> 9
-  //ctrl.EN = enable;  -> true
-  //ctrl.REG_DIS = data_only; -> false
-  //ctrl.GRP = grp; -> false
-  //ctrl.BYTE_SW = swap;  -> false
-	spiWriteByte(ICM20948_REG_I2C_SLV0_CTRL, 0x89);
-	delay(1);
-
-  return;
+    return;
   #endif
 
-
-	
 	//imu_spi_write(MPU9250_SPIx_ADDR, MPU9250_I2C_MST_CTRL, 0x5D);
   // Bank3  I2C_MST_CTRL
 	//spiWriteByte(ICM20948_REG_I2C_MST_CTRL, ICM20948_BIT_I2C_MST_P_NSR|15);     // Bank3  I2C_MST_CTRL
@@ -751,51 +828,36 @@ void cICM20948::AK09916_init(bool minimal){
 	delay(100);
 
   //SERIAL_PORT.println("cICM20948::AK09916_init() #99");
-
 }
 #endif
 
 
-void cICM20948::gyro_init( void )
-{
+void cICM20948::gyro_init( void ){
 	uint8_t i;
-
-
-	for( i=0; i<3; i++ )
-	{
+	for( i=0; i<3; i++ ){
     gyroADC[i]  = 0;
 		gyroZero[i] = 0;
 		gyroRAW[i]  = 0;
 	}
-
-	calibratingG = MPU_CALI_COUNT;
+  calibratingG_f = 0;
+  calibratingG = 0; 
+	//calibratingG = MPU_CALI_COUNT;
 }
 
 #ifdef USE_SPARK_LIB
-void cICM20948::gyro_get_adc( void )
-{
+void cICM20948::gyro_get_adc( void ){
 	int16_t x = 0;
 	int16_t y = 0;
 	int16_t z = 0;
 
-  uint8_t rawADC[6];
-
-  if( bConnected == true )
-  {
-    //spiRead(ICM20948_REG_GYRO_XOUT_H_SH, &rawADC[0], 6);
-
- 		//x = (((int16_t)rawADC[0]) << 8) | rawADC[1];
-  	//y = (((int16_t)rawADC[2]) << 8) | rawADC[3];
-  	//z = (((int16_t)rawADC[4]) << 8) | rawADC[5];
+  if( bConnected == true ){
 
   	gyroRAW[0] = x = myICM.agmt.gyr.axes.x;
   	gyroRAW[1] = y = myICM.agmt.gyr.axes.y;
   	gyroRAW[2] = z = myICM.agmt.gyr.axes.z;
 
   	GYRO_ORIENTATION( x, y,z );
-
   }
-
   gyro_common();
 }
 
@@ -827,72 +889,45 @@ void cICM20948::gyro_get_adc( void )
 }
 #endif
 
-void cICM20948::gyro_cali_start()
-{
-	calibratingG = MPU_CALI_COUNT;
+void cICM20948::gyro_cali_start(){
+	//calibratingG = MPU_CALI_COUNT;
+  calibratingG_f = 0;
+  calibratingG = 0; 
 }
 
-void cICM20948::gyro_common()
-{
-	static int16_t previousGyroADC[3];
+void cICM20948::gyro_common(){
 	static int32_t g[3];
-	uint8_t axis, tilt=0;
 
-	memset(previousGyroADC, 0, 3);
+  if(calibratingG_f == 0){
+    calibratingG++;
+    if(calibratingG >= 800){
+      if(calibratingG == 800){
+        g[0]=0;
+        g[1]=0;
+        g[2]=0;
+      }
+			g[0] += gyroADC[0];             // Sum up 512 readings
+			g[1] += gyroADC[1];             // Sum up 512 readings
+			g[2] += gyroADC[2];             // Sum up 512 readings
 
-	if (calibratingG>0)
-	{
-		for (axis = 0; axis < 3; axis++)
-		{
-			if (calibratingG == MPU_CALI_COUNT)
-			{ // Reset g[axis] at start of calibration
-				g[axis]=0;
-				previousGyroADC[axis] = gyroADC[axis];
-			}
-			if (calibratingG % 10 == 0)
-			{
-				//if(abs(gyroADC[axis] - previousGyroADC[axis]) > 8) tilt=1;
-
-				previousGyroADC[axis] = gyroADC[axis];
-			}
-			g[axis] += gyroADC[axis]; // Sum up 512 readings
-			gyroZero[axis]=g[axis]>>9;
-
-			if (calibratingG == 1)
-			{
-				//SET_ALARM_BUZZER(ALRM_FAC_CONFIRM, ALRM_LVL_CONFIRM_ELSE);
-			}
-		}
-
-		if(tilt)
-		{
-			calibratingG=1000;
-		}
-		else
-		{
-			calibratingG--;
-		}
-		return;
-	}
-
-  for (axis = 0; axis < 3; axis++)
-  {
-    gyroADC[axis] -= gyroZero[axis];
-
-    //anti gyro glitch, limit the variation between two consecutive readings
-    //gyroADC[axis] = constrain(gyroADC[axis],previousGyroADC[axis]-800,previousGyroADC[axis]+800);
-    previousGyroADC[axis] = gyroADC[axis];
+      if(calibratingG >= 1600){
+        gyroZero[0] = g[0] / 800;
+        gyroZero[1] = g[1] / 800;
+        gyroZero[2] = g[2] / 800;
+        //gyroZeroSum=gyroZero[0]+gyroZero[1]+gyroZero[2];
+        calibratingG_f=1;
+        calibratingG=0;
+      }
+    }
   }
+  gyroADC[0] -= gyroZero[0];
+  gyroADC[1] -= gyroZero[1];
+  gyroADC[2] -= gyroZero[2];
 }
 
-
-void cICM20948::acc_init( void )
-{
+void cICM20948::acc_init( void ){
   uint8_t i;
-
-
-  for( i=0; i<3; i++ )
-  {
+  for( i=0; i<3; i++ ){
     accADC[i]   = 0;
 		accZero[i]  = 0;
     accRAW[i]   = 0;
@@ -903,53 +938,49 @@ void cICM20948::acc_init( void )
   accIMZero=0.0;
 }
 
-
 #ifdef USE_SPARK_LIB
-void cICM20948::acc_get_adc( void )
-{
+void cICM20948::acc_get_adc( void ){
 	int16_t x = 0;
 	int16_t y = 0;
 	int16_t z = 0;
   //uint8_t rawADC[6];
 
   if( bConnected == true ){    
-    //spiRead(ICM20948_REG_ACCEL_XOUT_H_SH, &rawADC[0], 6);
-    for (int i=0;i<3;i++){
+    for (int i=0;i<=3;i++){
       if (myICM.dataReady()){
         myICM.getAGMT();         // The values are only updated when you call 'getAGMT'
         break;
       }
-      delay(5);
+      //delayMicroseconds(10); 
     }
-    //x = (((int16_t)rawADC[0]) << 8) | rawADC[1];
-    //y = (((int16_t)rawADC[2]) << 8) | rawADC[3];
-    //z = (((int16_t)rawADC[4]) << 8) | rawADC[5];
 	}
 
   accRAW[0] = x = myICM.agmt.acc.axes.x;
   accRAW[1] = y = myICM.agmt.acc.axes.y;
   accRAW[2] = z = myICM.agmt.acc.axes.z;
 
-  accADC_BD[0] = myICM.accX();
-  accADC_BD[1] = myICM.accY();
-  accADC_BD[2] = myICM.accZ();
+  // レゾルーションを掛けた値?  agmt.fss.a を元に、G に変換した値
+  //switch (agmt.fss.a){
+  //case 0: -> (((float)axis_val) / 16.384);
+  //case 1: -> (((float)axis_val) / 8.192);
+  //case 2: -> (((float)axis_val) / 4.096);
+  //case 3: -> (((float)axis_val) / 2.048);
+  //accADC_BD[0] = myICM.accX();
+  //accADC_BD[1] = myICM.accY();
+  //accADC_BD[2] = myICM.accZ();
 
   ACC_ORIENTATION( x,	y, z );
-
 	acc_common();
-
 }
 
 #else
-void cICM20948::acc_get_adc( void )
-{
+void cICM20948::acc_get_adc( void ){
 	int16_t x = 0;
 	int16_t y = 0;
 	int16_t z = 0;
   uint8_t rawADC[6];
 
-  if( bConnected == true )
-  {    
+  if( bConnected == true ){    
     spiRead(ICM20948_REG_ACCEL_XOUT_H_SH, &rawADC[0], 6);
 
     x = (((int16_t)rawADC[0]) << 8) | rawADC[1];
@@ -973,27 +1004,26 @@ void cICM20948::acc_get_adc( void )
 * get Average for each acc x,y,z
 * but z is set to zero;
 */
-void cICM20948::acc_common()
-{
+void cICM20948::acc_common(){
 	static int32_t a[3];
 
   if(calibratingA_f == 0){
     calibratingA++;
     if(calibratingA >= 800){
       if(calibratingA == 800){
-        //a[0]=0;
-        //a[1]=0;
-        //a[2]=0;
+        a[0]=0;
+        a[1]=0;
+        a[2]=0;
       }
-			//a[0] += accADC[0];             // Sum up 512 readings
-			//a[1] += accADC[1];             // Sum up 512 readings
-			//a[2] += accADC[2];             // Sum up 512 readings
+			a[0] += accADC[0];             // Sum up 512 readings
+			a[1] += accADC[1];             // Sum up 512 readings
+			a[2] += accADC[2];             // Sum up 512 readings
 
       if(calibratingA >= 1600){
-        //accZero[0] = a[0] / 800;
-        //accZero[1] = a[1] / 800;
-        //accZero[2] = a[2] / 800;
-        //accZeroSum=accZero[0]+accZero[1]+accZero[2];
+        accZero[0] = a[0] / 800;
+        accZero[1] = a[1] / 800;
+        accZero[2] = a[2] / 800;
+        accZeroSum=accZero[0]+accZero[1]+accZero[2];
 
         // 此処で、acc の内積を出す。
         //accIMZero = sqrt(accZero[0] * accZero[0] + accZero[1] * accZero[1] + accZero[2] * accZero[2]);
@@ -1005,12 +1035,7 @@ void cICM20948::acc_common()
       }
     }
   }
-
-  //accADC[ROLL]  -=  accZero[ROLL] ;
-  //accADC[PITCH] -=  accZero[PITCH];
-  //accADC[YAW]   -=  accZero[YAW] ;
 }
-
 
 void cICM20948::mag_init( void )
 {
@@ -1024,7 +1049,6 @@ void cICM20948::mag_init( void )
   }
   calibratingM = MPU_CALI_COUNT;
 }
-
 
 #ifdef USE_SPARK_LIB
 /*---------------------------------------------------------------------------
@@ -1088,11 +1112,9 @@ bool cICM20948::mag_get_adc( void )
 
 	mag_common();
   return true;
-
 }
 
 #else
-
 /*---------------------------------------------------------------------------
      TITLE   : mag_get_adc
      WORK    :
@@ -1496,18 +1518,20 @@ bool cICM20948::dmp_get_adc(){
 
 void cICM20948::acc_cali_start()
 {
-	calibratingA = MPU_CALI_COUNT;
+	//calibratingA = MPU_CALI_COUNT;
+  calibratingA_f = 0;
+  calibratingA = 0; 
 }
 
 bool cICM20948::acc_cali_get_done()
 {
-	if( calibratingA == 0 ) return true;
+	if( calibratingA_f !=0 ) return true;
 	else                    return false;
 }
 
 bool cICM20948::gyro_cali_get_done()
 {
-	if( calibratingG == 0 ) return true;
+	if( calibratingG_f != 0 ) return true;
 	else                    return false;
 }
 

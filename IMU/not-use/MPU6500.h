@@ -18,42 +18,6 @@
 #include <Arduino.h>
 
 #include "Define.h"
-
-
-// add by nishi
-#define MPU6500_IMU
-#define USE_ACC_NISHI
-#define USE_GRYO_NISHI
-#define USE_MADWICK
-
-// add by nishi 2021.10.7
-#define IMU_SENSER6
-//#define USE_MAG
-
-#define USE_ACC_2G
-//#define USE_ACC_4G
-//#define USE_ACC_8G
-
-#if defined(USE_ACC_2G)
-	#define ACC_MAX_G 16384.0
-	#define ACC_X_CUT_OFF 16.0
-	#define ACC_Y_CUT_OFF 16.0
-	#define ACC_Z_CUT_OFF_P 16.0
-	#define ACC_Z_CUT_OFF_M -16.0
-#elif defined(USE_ACC_4G)
-	#define ACC_MAX_G 8192.0
-	#define ACC_X_CUT_OFF 16.0
-	#define ACC_Y_CUT_OFF 16.0
-	#define ACC_Z_CUT_OFF_P 16.0
-	#define ACC_Z_CUT_OFF_M -16.0
-#else
-	#define ACC_MAX_G 4096.0
-	#define ACC_X_CUT_OFF 16.0
-	#define ACC_Y_CUT_OFF 16.0
-	#define ACC_Z_CUT_OFF_P 16.0
-	#define ACC_Z_CUT_OFF_M -16.0
-#endif
-
 #include "MPU6500_REGS.h"
 
 
@@ -67,8 +31,6 @@
 
 // add by nishi 2021.10.7
 #define IMU_SENSER6
-
-#define SERIAL_PORT Serial
 
 
 void read_regs( uint8_t addr, uint8_t reg, uint8_t *p_data, uint32_t length );
@@ -86,8 +48,6 @@ class cMPU6500
     int16_t  accADC[3];
     int16_t  accRAW[3];
     int16_t  accZero[3];
-	int32_t	 accZeroSum;
-	float    accIMZero;			// add by nishi acc 内積
 
     int16_t  magADC[3];
     int16_t  magRAW[3];
@@ -99,15 +59,6 @@ class cMPU6500
 	uint16_t calibratingG;
 	uint16_t calibratingA;
     uint16_t calibratingM;
-	uint16_t calibratingD;
-
-	char calibratingG_f;
-	char calibratingA_f;
-	char calibratingD_f;
-
-	float aRes;
-	float gRes;
-	float mRes;
 
     int16_t AK8963_ASA[3];
 

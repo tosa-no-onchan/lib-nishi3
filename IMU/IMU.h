@@ -42,16 +42,20 @@ class cIMU
 {
 public:
 	//cMPU9250 SEN;
-	//cMPU6500 SEN;
+  #if defined(MPU6500_IMU)
+	  cMPU6500 SEN;
+  #endif
   // changed by nishi
   //cIMUDevice SEN;
   //cICM20648 SEN;
-  cICM20948 SEN;
-  
+  #if defined(ICM20948_IMU)
+    cICM20948 SEN;
+  #endif
   
 	int16_t angle[3];
   float   rpy[3];
   float   quat[4];
+  float   quat_tmp[4];
   double  quat_dmp[4];  // add by nishi
   int16_t gyroData[3];
   int16_t gyroRaw[3];
@@ -60,21 +64,21 @@ public:
   int16_t magData[3];
   int16_t magRaw[3];
 
-  float ax, ay, az;
+  double ax, ay, az;
   float gx, gy, gz;
   float mx, my, mz;
 
 	bool bConnected;
 
-  float aRes;
-  float gRes;
-  float mRes;
+  //float aRes;
+  //float gRes;
+  //float mRes;
 
   float tf_dlt[3];
   float v_acc[3];
   float v_acc_pre[3];
 
-  int16_t cali_tf;
+  int16_t cali_tf;    // Madgwick Caliburation count
 
   float adjust[3];
 
@@ -102,6 +106,12 @@ private:
   //uint32_t update_us;
   unsigned long update_us;
 
+  uint32_t tTime_t[3];
+  uint32_t ac_cnt=0;
+  //float zero_off=0.0;
+
+  unsigned long tTime[3];
+
 	void computeIMU( void );
 
   #ifdef ICM20948_IMU
@@ -115,7 +125,7 @@ private:
 
   #endif
 
-  void computeTF(unsigned long process_time);
+  void computeTF(unsigned long process_time,double *dlt);
   void compCBvBdt(float q[4],float vB[3],double dt,double *Pn);
 
 };

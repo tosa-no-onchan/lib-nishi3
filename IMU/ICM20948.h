@@ -11,14 +11,72 @@
 
 // add by nishi
 #define ICM20948_IMU
-#define USE_SPARK_LIB
+//#define USE_SPARK_LIB
 #define USE_ACC_NISHI
-//#define USE_GRYO_NISHI
-#define USE_DMP_NISHI
+#define USE_GRYO_NISHI
+//#define USE_DMP_NISHI
+#define USE_MADWICK
 
 // add by nishi 2021.10.7
 #define IMU_SENSER6
 //#define USE_MAG
+
+#define USE_ACC_2G
+//#define USE_ACC_4G
+//#define USE_ACC_8G
+
+// Full-Scale Range
+//  ACCEL_FS=0  -> ±2 [G]
+//  ACCEL_FS=1  -> ±4 [G]
+//  ACCEL_FS=2  -> ±8 [G]
+//  ACCEL_FS=3  -> ±16 [G]
+// Sensitivity Scale Factor
+//  ACCEL_FS=0 -> 16,384 [LSB/g]
+//  ACCEL_FS=1 -> 8,192 [LSB/g]
+//  ACCEL_FS=2 -> 4,096 [LSB/g]
+//  ACCEL_FS=3 -> 2,048 [LSB/g]
+// initial Tolerance
+//  Component-level ±0.5[%]
+// ZERO-G OUTPUT
+//  Initial Tolerance Board-level, all axes ±50 [mg]
+//aRes = 8.0/32768.0;      // 8g    16bit -> 8G
+
+#if defined(USE_ACC_2G)
+	#define ACC_MAX_G 16384.0
+    #define ACC_X_CUT_OFF 40.0    // 2G  with Low pass filter  ICM20948_ACCEL_BW_6HZ
+    #define ACC_Y_CUT_OFF 40.0    // 
+    #define ACC_Z_CUT_OFF_P 40.0  // 
+	#define ACC_Z_CUT_OFF_M -40.0 // 
+
+    //#define ACC_X_CUT_OFF 300.0    // 2G  without Low pass filter
+    //#define ACC_Y_CUT_OFF 300.0    // 
+    //#define ACC_Z_CUT_OFF_P 300.0  // 
+    //#define ACC_Z_CUT_OFF_M -300.0 // 
+
+    //#define ACC_X_CUT_OFF 150.0    // 2G  without Low pass filter
+    //#define ACC_Y_CUT_OFF 150.0    // 
+    //#define ACC_Z_CUT_OFF_P 150.0  // 
+    //#define ACC_Z_CUT_OFF_M -150.0 // 
+
+#elif defined(USE_ACC_4G)
+	#define ACC_MAX_G  8192.0
+    //#define ACC_X_CUT_OFF 20.0    // 4G - 16G
+    //#define ACC_Y_CUT_OFF 20.0    // 4G - 16G
+    //#define ACC_Z_CUT_OFF_P 20.0  // 4G - 16G
+    //#define ACC_Z_CUT_OFF_M -20.0 // 4G - 16G
+
+#else
+	#define ACC_MAX_G  4096.0
+    //#define ACC_X_CUT_OFF 20.0    // 4G - 16G
+    //#define ACC_Y_CUT_OFF 20.0    // 4G - 16G
+    //#define ACC_Z_CUT_OFF_P 20.0  // 4G - 16G
+    //#define ACC_Z_CUT_OFF_M -20.0 // 4G - 16G
+#endif
+    //#define ACC_X_CUT_OFF 16.0
+    //#define ACC_Y_CUT_OFF 16.0
+    //#define ACC_Z_CUT_OFF_P 16.0
+    //#define ACC_Z_CUT_OFF_M -16.0
+
 
 #ifdef USE_SPARK_LIB
 #include <ICM_20948.h> // Click here to get the library: http://librarymanager/All#SparkFun_ICM_20948_IMU
@@ -69,7 +127,7 @@ public:
 	int16_t  gyroZero[3];
 
 	int16_t  accADC[3];
-	int16_t  accADC_BD[3];	// add by nishi from ICM-20948
+	float    accADC_BD[3];	// add by nishi from ICM-20948
 	int16_t  accRAW[3];
 	int16_t	 accZero[3];
 	int32_t	 accZeroSum;
@@ -90,6 +148,7 @@ public:
 	uint16_t calibratingM;
 	uint16_t calibratingD;
 
+	char calibratingG_f;
 	char calibratingA_f;
 	char calibratingD_f;
 
@@ -100,14 +159,20 @@ public:
 	int32_t quatRAW[4];		// add by nishi
 	int32_t quatZero[4];		// add by nishi
 
+
+	float aRes;
+	float gRes;
+	float mRes;
+	float zero_off;
+
 	#ifndef USE_SPARK_LIB
 	#endif
 
 public:
 	cICM20948();
 
-  bool begin( void );
-  bool init( void );
+  	bool begin( void );
+  	bool init( void );
 	void gyro_init( void );
 	void gyro_get_adc( void );
 	void gyro_common();

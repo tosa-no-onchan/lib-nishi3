@@ -27,10 +27,10 @@
 
 //#define sampleFreqDef   512.0f          // sample frequency in Hz
 #define sampleFreqDef   800.0f          // sample frequency in Hz
-//#define betaDef         0.1f            // 2 * proportional gain
+#define betaDef         0.1f            // 2 * proportional gain
 // test by nishi 2022.1.8
 //#define betaDef         0.001f            // 2 * proportional gain
-#define betaDef         0.0025f            // 2 * proportional gain
+//#define betaDef         0.0025f            // 2 * proportional gain
 
 
 //============================================================================================
@@ -150,15 +150,15 @@ void Madgwick::update(float gx, float gy, float gz, float ax, float ay, float az
 	q3 *= recipNorm;
 
 	// add by nishi
-	int q0i,q1i,q2i,q3i;
-	q0i =(int)roundf(q0*10000.0);
-	q0 = (float)q0i/ 10000.0;
-	q1i =(int)roundf(q1*10000.0);
-	q1 = (float)q1i/ 10000.0;
-	q2i =(int)roundf(q2*10000.0);
-	q2 = (float)q2i/ 10000.0;
-	q3i =(int)roundf(q3*10000.0);
-	q3 = (float)q3i/ 10000.0;
+	//int q0i,q1i,q2i,q3i;
+	//q0i =(int)roundf(q0*10000.0);
+	//q0 = (float)q0i/ 10000.0;
+	//q1i =(int)roundf(q1*10000.0);
+	//q1 = (float)q1i/ 10000.0;
+	//q2i =(int)roundf(q2*10000.0);
+	//q2 = (float)q2i/ 10000.0;
+	//q3i =(int)roundf(q3*10000.0);
+	//q3 = (float)q3i/ 10000.0;
 
 	anglesComputed = 0;
 }
@@ -239,14 +239,14 @@ void Madgwick::updateIMU(float gx, float gy, float gz, float ax, float ay, float
 	q3 *= recipNorm;
 
 	// add by nishi
-	int q0i,q1i,q2i,q3i;
-	q0i =(int)roundf(q0*10000.0);
-	q0 = (float)q0i/ 10000.0;
-	q1i =(int)roundf(q1*10000.0);
-	q1 = (float)q1i/ 10000.0;
-	q2i =(int)roundf(q2*10000.0);
-	q2 = (float)q2i/ 10000.0;
-	q3i =(int)roundf(q3*10000.0);
+	//int q0i,q1i,q2i,q3i;
+	//q0i =(int)roundf(q0*10000.0);
+	//q0 = (float)q0i/ 10000.0;
+	//q1i =(int)roundf(q1*10000.0);
+	//q1 = (float)q1i/ 10000.0;
+	//q2i =(int)roundf(q2*10000.0);
+	//q2 = (float)q2i/ 10000.0;
+	//q3i =(int)roundf(q3*10000.0);
 	//q3 = (float)q3i/ 10000.0;
 
 	anglesComputed = 0;
