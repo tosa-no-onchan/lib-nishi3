@@ -227,15 +227,6 @@ void cIMU::computeIMU( void ){
     #endif
   }
 
-  #if defined(USE_GRYO_NISHI)
-    // GYRO 0 noise cut off
-    for (axis = 0; axis < 3; axis++){
-      if (abs(gyroData[axis]) <= 4){
-        gyroData[axis] = 0;
-      }
-    }
-  #endif
-
   //SERIAL_PORT.print(F("gyroData[0]:"));
   //SERIAL_PORT.print(gyroData[0]);
   //SERIAL_PORT.print(F(" gyroData[1]:"));
@@ -243,31 +234,35 @@ void cIMU::computeIMU( void ){
   //SERIAL_PORT.print(F(" gyroData[2]:"));
   //SERIAL_PORT.println(gyroData[2]);
 
-  //SERIAL_PORT.print(F("accData[0]:"));
-  //SERIAL_PORT.print(accData[0]);
-  //SERIAL_PORT.print(F(" accData[1]:"));
-  //SERIAL_PORT.print(accData[1]);
-  //SERIAL_PORT.print(F(" accData[2]:"));
-  //SERIAL_PORT.println(accData[2]);
-
+  //#define TEST_NISHI_5_K
+  #if defined(TEST_NISHI_5_K)
+    //SERIAL_PORT.print(F("SEN.accZero[2]:"));
+    //SERIAL_PORT.print(SEN.accZero[2]);
+    SERIAL_PORT.print(F("accData[0]:"));
+    SERIAL_PORT.print(accData[0]);
+    SERIAL_PORT.print(F(" accData[1]:"));
+    SERIAL_PORT.println(accData[1]);
+    //SERIAL_PORT.print(F(" accData[2]:"));
+    //SERIAL_PORT.println(accData[2]);
+  #endif
 
   #if defined(USE_ACC_NISHI)
-    ax = (float)accData[0]*SEN.aRes;
-    ay = (float)accData[1]*SEN.aRes;
-    az = (float)accData[2]*SEN.aRes;
+    ax0 = (float)accData[0]*SEN.aRes;
+    ay0 = (float)accData[1]*SEN.aRes;
+    az0 = (float)accData[2]*SEN.aRes;
   #endif
 
   #if defined(USE_GRYO_NISHI)
-    gx = (float)gyroData[0]*SEN.gRes;
-    gy = (float)gyroData[1]*SEN.gRes;
-    gz = (float)gyroData[2]*SEN.gRes;
+    gx0 = (float)gyroData[0]*SEN.gRes;
+    gy0 = (float)gyroData[1]*SEN.gRes;
+    gz0 = (float)gyroData[2]*SEN.gRes;
 
-    //SERIAL_PORT.print(F("gx:"));
-    //SERIAL_PORT.print(gx,8);
-    //SERIAL_PORT.print(F(" gy:"));
-    //SERIAL_PORT.print(gy,8);
-    //SERIAL_PORT.print(F(" gz:"));
-    //SERIAL_PORT.println(gz,8);
+    //SERIAL_PORT.print(F("gx0:"));
+    //SERIAL_PORT.print(gx0,8);
+    //SERIAL_PORT.print(F(" gy0:"));
+    //SERIAL_PORT.print(gy0,8);
+    //SERIAL_PORT.print(F(" gz0:"));
+    //SERIAL_PORT.println(gz0,8);
 
   #endif
 
@@ -283,14 +278,14 @@ void cIMU::computeIMU( void ){
       //my = x * mag_softiron_matrix[1][0] + y * mag_softiron_matrix[1][1] + z * mag_softiron_matrix[1][2];
       //mz = x * mag_softiron_matrix[2][0] + y * mag_softiron_matrix[2][1] + z * mag_softiron_matrix[2][2];
 
-      mx = SEN.magADC[0];
-      my = SEN.magADC[1];
-      mz = SEN.magADC[2];
+      mx0 = SEN.magADC[0];
+      my0 = SEN.magADC[1];
+      mz0 = SEN.magADC[2];
 
     #else
-      mx = (float)SEN.magADC[0]*SEN.mRes;
-      my = (float)SEN.magADC[1]*SEN.mRes;
-      mz = (float)SEN.magADC[2]*SEN.mRes;
+      mx0 = (float)SEN.magADC[0]*SEN.mRes;
+      my0 = (float)SEN.magADC[1]*SEN.mRes;
+      mz0 = (float)SEN.magADC[2]*SEN.mRes;
     #endif
   #endif
 
@@ -302,7 +297,7 @@ void cIMU::computeIMU( void ){
     #ifdef IMU_SENSER6
       if (SEN.calibratingG_f != 0 && SEN.calibratingA_f != 0){
         filter.invSampleFreq = (float)process_time/1000000.0f;
-        filter.updateIMU(gx, gy, gz, ax, ay, az);
+        filter.updateIMU(gx0, gy0, gz0, ax0, ay0, az0);
       }
       else{
         return;
@@ -310,7 +305,7 @@ void cIMU::computeIMU( void ){
     #else
       if (SEN.calibratingG_f != 0 && SEN.calibratingA_f != 0 && SEN.calibratingM==0){
         filter.invSampleFreq = (float)process_time/1000000.0f;
-        filter.update(gx, gy, gz, ax, ay, az, mx, my, mz);
+        filter.update(gx0, gy0, gz0, ax0, ay0, az0, mx0, my0, mz0);
         //filter.update(gx, gy, gz*-1.0, ax, ay, az, mx, my, mz);
         //filter.update(gx, gy, gz, ax, ay, az, my, mx, mz*-1.0);
         //filter.update(gx, gy, gz, ax, ay, az, mx*-1.0, my, mz);
@@ -360,96 +355,64 @@ void cIMU::computeIMU( void ){
 
     double acc_Zero[3];
 
-    // 1G の分配値を計算
+    // acc 1G の分配値を計算
+    //acc_Zero[0] = cb.dt[2][0]*(ACC_1G - SEN.zero_off);  
+    //acc_Zero[1] = cb.dt[2][1]*(ACC_1G - SEN.zero_off);  
+    //acc_Zero[2] = cb.dt[2][2]*(ACC_1G - SEN.zero_off);
+    acc_Zero[0] = cb.dt[2][0]*((double)SEN.accZero[2] - SEN.zero_off);  
+    acc_Zero[1] = cb.dt[2][1]*((double)SEN.accZero[2] - SEN.zero_off);  
+    acc_Zero[2] = cb.dt[2][2]*((double)SEN.accZero[2] - SEN.zero_off);
 
-    // 2G -> SEN.accZeroSum:8698
-    // 4G ->  SEN.accZeroSum:8723
-    //SERIAL_PORT.print(F("SEN.accZeroSum:"));
-    //SERIAL_PORT.println(SEN.accZeroSum);    // 4238  -> 8 G
-
-    //acc_Zero[0] = (int16_t)(cb.dt[2][0]*(double)SEN.accZeroSum);
-    //acc_Zero[1] = (int16_t)(cb.dt[2][1]*(double)SEN.accZeroSum);
-    //acc_Zero[2] = (int16_t)(cb.dt[2][2]*(double)SEN.accZeroSum);
-
-    //acc_Zero[0] = (int16_t)(cb.dt[2][0]*ACC_MAX_G);
-    //acc_Zero[1] = (int16_t)(cb.dt[2][1]*ACC_MAX_G);
-    //acc_Zero[2] = (int16_t)(cb.dt[2][2]*ACC_MAX_G);
-
-
-    acc_Zero[0] = cb.dt[2][0]*(ACC_MAX_G - SEN.zero_off);  
-    acc_Zero[1] = cb.dt[2][1]*(ACC_MAX_G - SEN.zero_off);  
-    acc_Zero[2] = cb.dt[2][2]*(ACC_MAX_G - SEN.zero_off);
-
- 
-    //acc_Zero[0] = cb.dt[2][0]*4238.0;  
-    //acc_Zero[1] = cb.dt[2][1]*4238.0;  
-    //acc_Zero[2] = cb.dt[2][2]*4238.0;
-
-    //acc_Zero[0] = (int16_t)(cb.dt[2][0]*8698.0);    //
-    //acc_Zero[1] = (int16_t)(cb.dt[2][1]*8698.0);
-    //acc_Zero[2] = (int16_t)(cb.dt[2][2]*8698.0);    // accData[0]:-4 accData[1]:-21 accData[2]:-506
-
-    //SEN.accZeroSum:8669
-    //accData[0]:-30 accData[1]:-36 accData[2]:-469
 
     // acc 計測値から、1G をキャンセルします。 -> 読み込み値での計算
+    // SEN.zero_off(ACC_ZERO_OFF) を調整して、az が、 0軸 近辺を 中心 に振幅するようにします。
     ax = (double)accData[0] - acc_Zero[0];
     ay = (double)accData[1] - acc_Zero[1];
     az = (double)accData[2] - acc_Zero[2];
 
-    //SERIAL_PORT.print(F("ax:"));
-    //SERIAL_PORT.print(ax,8);
-    //SERIAL_PORT.print(F(" ay:"));
-    //SERIAL_PORT.print(ay,8);
-    //SERIAL_PORT.print(F(" az:"));
-    //SERIAL_PORT.println(az,8);
 
+    //#define TEST_11_3
+    #if defined(TEST_11_3)
+      //if(az > -3000 && fabs(az) < 15000){
+      SERIAL_PORT.print(F("ax:"));
+      SERIAL_PORT.print(ax,6);
+      SERIAL_PORT.print(F(" ay:"));
+      SERIAL_PORT.print(ay,6);
+      SERIAL_PORT.print(F(" az:"));
+      SERIAL_PORT.println(az,6);
+      //}
+    #endif
 
     // acc のノイズの 削除
-    if (fabsf(ax) <= ACC_X_CUT_OFF) ax = 0;
-    if (fabsf(ay) <= ACC_Y_CUT_OFF) ay = 0;
-    if (fabsf(az) <= ACC_Z_CUT_OFF_P) az = 0;
-    
+    if (fabs(ax) <= ACC_X_CUT_OFF) ax = 0;
+    if (fabs(ay) <= ACC_Y_CUT_OFF) ay = 0;
+    if (fabs(az) <= ACC_Z_CUT_OFF_P) az = 0;
+
     // ax,ay,az を、 表示して、 Arduino IDE の Serial plotter で、ACC_X_CUT_OFF の範囲を決めます。
-    SERIAL_PORT.print(F("ax:"));
-    SERIAL_PORT.print(ax,8);
-    SERIAL_PORT.print(F(" ay:"));
-    SERIAL_PORT.print(ay,8);
-    SERIAL_PORT.print(F(" az:"));
-    SERIAL_PORT.println(az,8);
-
-
-    double dlt[3];    // acc_x,y,z 基準座標系 加速度
-
-    // 今回の加速度 を 基準座標系に変換
-    dlt[0]=cb.dt[0][0]*ax+cb.dt[0][1]*ay+cb.dt[0][2]*az;
-    dlt[1]=cb.dt[1][0]*ax+cb.dt[1][1]*ay+cb.dt[1][2]*az;
-    dlt[2]=cb.dt[2][0]*ax+cb.dt[2][1]*ay+cb.dt[2][2]*az;
-
-    // dlt を、 表示して、 Arduino IDE の Serial plotter で、CUT_OFF の範囲を決めます。
-    //SERIAL_PORT.print(F("dlt[0]:"));
-    //SERIAL_PORT.print(dlt[0]);
-    //SERIAL_PORT.print(F(" dlt[1]:"));
-    //SERIAL_PORT.print(dlt[1]);
-    //SERIAL_PORT.print(F(" dlt[2]:"));
-    //SERIAL_PORT.println(dlt[2]);
-
-    //SERIAL_PORT.print(F("ax:"));
-    //SERIAL_PORT.print(ax,8);
-    //SERIAL_PORT.print(F(" ay:"));
-    //SERIAL_PORT.print(ay,8);
-    //SERIAL_PORT.print(F(" az:"));
-    //SERIAL_PORT.println(az,8);
+    // SEN.zero_off(ACC_ZERO_OFF) を調整して、ax,ay,az が 0 になるようにします。
+    //#define TEST_11_5
+    #if defined(TEST_11_5)
+      //if(az > -3000 && fabs(az) < 15000){
+        SERIAL_PORT.print(F("ax:"));
+        SERIAL_PORT.print(ax,6);
+        SERIAL_PORT.print(F(" ay:"));
+        SERIAL_PORT.print(ay,6);
+        SERIAL_PORT.print(F(" az:"));
+        SERIAL_PORT.println(az,6);
+      //}
+    #endif
 
     // Madgwick Caliburation OK?
     if(cali_tf >= 7000){
-      //SERIAL_PORT.print(F("ax:"));
-      //SERIAL_PORT.print(ax,8);
-      //SERIAL_PORT.print(F(" ay:"));
-      //SERIAL_PORT.print(ay,8);
-      //SERIAL_PORT.print(F(" az:"));
-      //SERIAL_PORT.println(az,8);
-
+      //#define TEST_11_6
+      #if defined(TEST_11_6)
+        SERIAL_PORT.print(F("ax:"));
+        SERIAL_PORT.print(ax,6);
+        SERIAL_PORT.print(F(" ay:"));
+        SERIAL_PORT.print(ay,6);
+        SERIAL_PORT.print(F(" az:"));
+        SERIAL_PORT.println(az,6);
+      #endif
 
       //SERIAL_PORT.print(F("accData[0]:"));
       //SERIAL_PORT.print(accData[0],8);
@@ -474,25 +437,21 @@ void cIMU::computeIMU( void ){
       //SERIAL_PORT.print(F(" accRaw[2]:"));
       //SERIAL_PORT.println(accRaw[2],8);
 
-      //SERIAL_PORT.print(F("dlt[0]:"));
-      //SERIAL_PORT.print(dlt[0]);
-      //SERIAL_PORT.print(F(" dlt[1]:"));
-      //SERIAL_PORT.print(dlt[1]);
-      //SERIAL_PORT.print(F(" dlt[2]:"));
-      //SERIAL_PORT.println(dlt[2]);
-
-
       quat[0] = quat_tmp[0];  // W
       quat[1] = quat_tmp[1];  // X
       quat[2] = quat_tmp[2];  // Y
       quat[3] = quat_tmp[3];  // Z
 
-      computeTF(process_time,dlt);
+      computeTF(process_time);
     }
     else{
       cali_tf ++;
     }
-
+  #else
+    quat[0] = filter.q0;  // W
+    quat[1] = filter.q1;  // X
+    quat[2] = filter.q2;  // Y
+    quat[3] = filter.q3;  // Z
   #endif
 
 
@@ -519,108 +478,90 @@ void cIMU::computeIMU( void ){
      ARG     : void
      RET     : void
 ---------------------------------------------------------------------------*/
-void cIMU::computeTF(unsigned long process_time,double *dlt){
-  double roll, pitch, yaw;
+void cIMU::computeTF(unsigned long process_time){
+
+  double dlt[3];    // 基準座標系 今回の移動距離
+  //double v_acc_dlt[3];
 
   double s = (double)process_time/1000000.0;
 
   //QuaternionToEulerAngles(quat[0], quat[1], quat[2], quat[3],roll, pitch, yaw);
 
-  double v_acc_dlt[3];
 
-  // 速度を累計
-  v_acc[0] += dlt[0]*SEN.aRes*s;
-  v_acc[1] += dlt[1]*SEN.aRes*s;
-  v_acc[2] += dlt[2]*SEN.aRes*s;
+  // 今のロボット速度を計算。   [ax ay az]*s を積分 
+  v_acc[0] += ax*s*SEN.aRes;
+  v_acc[1] += ay*s*SEN.aRes;
+  v_acc[2] += az*s*SEN.aRes;
 
 
-  // 起動時にゴミが入ってくるみたい。
-  //v_acc[0]:-1.15206158  v_acc_pre[0]:0.00000000
-  //v_acc[1]:-0.33362532  v_acc_pre[1]:0.00000000
-  //v_acc[2]:0.75112534  v_acc_pre[2]:0.00000000
-  //v_acc[0]:-1.15281248  v_acc_pre[0]:-1.15206158
-  //v_acc[1]:-0.33397377  v_acc_pre[1]:-0.33362532
-  //v_acc[2]:0.75114322  v_acc_pre[2]:0.75112534
+  //#define KKKK2
+  #if defined(KKKK2)
+    SERIAL_PORT.print(F("v_acc[0]:"));
+    SERIAL_PORT.print(v_acc[0],8);
+    SERIAL_PORT.print(F(" v_acc[1]:"));
+    SERIAL_PORT.print(v_acc[1],8);
+    SERIAL_PORT.print(F(" v_acc[2]:"));
+    SERIAL_PORT.println(v_acc[2],8);
+  #endif
 
+  // v_acc[0]:-1.672498 v_acc[1]:-0.916505 v_acc[2]:0.888893
 
   // 速度を Cut Off
-  //#define VX_CUT_OFF 0.003
-  //#define VY_CUT_OFF 0.003
-  //#define VZ_CUT_OFF 0.003
-  //0.0002
-  //#define VX_CUT_OFF 0.00012
-  //#define VX_CUT_OFF 0.000012
-  #define VX_CUT_OFF 0.000024
-  //#define VX_CUT_OFF 0.0003
+  //#define VX_CUT_OFF 0.4
+  //#define VY_CUT_OFF 0.4
+  //#define VZ_CUT_OFF 0.4
 
-  //#define VY_CUT_OFF 0.00012
-  //#define VY_CUT_OFF 0.000012
-  #define VY_CUT_OFF 0.000024
-  //#define VY_CUT_OFF 0.0003
-
-  //#define VZ_CUT_OFF 0.00012
-  //#define VZ_CUT_OFF 0.000012
-  #define VZ_CUT_OFF 0.000024
-  //#define VZ_CUT_OFF 0.0006
-
-  if(ax == 0.0 && ay == 0.0 && az == 0.0){
-    float v_acc_dl[3];
-    v_acc_dl[0] = fabsf(v_acc[0] - v_acc_pre[0]);
-    v_acc_dl[1] = fabsf(v_acc[1] - v_acc_pre[1]);
-    v_acc_dl[2] = fabsf(v_acc[2] - v_acc_pre[2]);
-
-    //#define KKKK3
-    #ifdef KKKK3
-      SERIAL_PORT.print(F("v_acc_dl[0]:"));
-      SERIAL_PORT.print(v_acc_dl[0],8);
-      SERIAL_PORT.print(F(" v_acc_dl[1]:"));
-      SERIAL_PORT.print(v_acc_dl[1],8);
-      SERIAL_PORT.print(F(" v_acc_dl[2]:"));
-      SERIAL_PORT.println(v_acc_dl[2],8);
-    #endif
-
-    // v_acc_dl[0]:0.00009981 v_acc_dl[1]:0.00015712 v_acc_dl[2]:0.00057411
-    // v_acc_dl[0]:0.00008539 v_acc_dl[1]:0.00040845 v_acc_dl[2]:0.00026176
-    // v_acc_dl[0]:0.00078104 v_acc_dl[1]:0.00036857 v_acc_dl[2]:0.00020621
-    // v_acc_dl[0]:0.00001029 v_acc_dl[1]:0.00034127 v_acc_dl[2]:0.00011996
-
-
-    if(v_acc[0] != 0.0){
-      if(v_acc_dl[0] <= VX_CUT_OFF){
-        //SERIAL_PORT.println(F("v_acc[0]: Zero"));
-        v_acc[0]=0.0;
-      }
+  if(ax == 0.0){
+    if(fabsf(v_acc[0]) <= VX_CUT_OFF)
+      v_acc[0]=0.0;
+    if(v_acc[0] <= VX_CUT_OFF_PRE && v_acc[0] == v_acc_pre[0]){
+      v_acc[0]=0.0;
     }
-    if(v_acc[1] != 0.0){
-      if(v_acc_dl[1] <= VY_CUT_OFF){
-        //SERIAL_PORT.println(F("v_acc[1]: Zero"));
-        v_acc[1]=0.0;
-      }
-    }
-    if(v_acc[2] != 0.0){
-      if(v_acc_dl[2] <= VZ_CUT_OFF){
-        //SERIAL_PORT.println(F("v_acc[2]: Zero"));
-        v_acc[2]=0.0;
-      }
-    }
-    //v_acc[0]=0.0;
-    //v_acc[1]=0.0;
-    //v_acc[2]=0.0;
   }
-  
-  //tf_dlt[0] += xyz[0] * v_acc[0] * s;   // delta x
-  tf_dlt[0] += v_acc[0]*s;   // delta x
-  //tf_dlt[1] += xyz[1] * v_acc[1] * s;   // delta y
-  tf_dlt[1] += v_acc[1]*s;   // delta y
-  //tf_dlt[2] += xyz[2] * v_acc[2] * s;  // delta z
-  tf_dlt[2] += v_acc[2]*s;   // delta y
-
+  if(ay == 0.0){
+    if(fabsf(v_acc[1]) <= VY_CUT_OFF)
+      v_acc[1]=0.0;
+    if(v_acc[1] <= VY_CUT_OFF_PRE && v_acc[1] == v_acc_pre[1]){
+      v_acc[1]=0.0;
+    }
+  }
+  if(az== 0.0){
+    if(fabsf(v_acc[2]) <= VZ_CUT_OFF)
+      v_acc[2]=0.0;
+    if(v_acc[2] <= VZ_CUT_OFF_PRE && v_acc[2] == v_acc_pre[2]){
+      v_acc[2]=0.0;
+    }
+  }
   v_acc_pre[0]=v_acc[0];
   v_acc_pre[1]=v_acc[1];
   v_acc_pre[2]=v_acc[2];
 
-  //#define KKKK2
-  #ifdef KKKK2
+  // IMU を静止させた状態で、下記値が、0 を示すように、Cut Off を決めます。
+  #define KKKK3
+  #ifdef KKKK3
+    SERIAL_PORT.print(F("v_acc[0]:"));
+    SERIAL_PORT.print(v_acc[0],6);
+    SERIAL_PORT.print(F(" v_acc[1]:"));
+    SERIAL_PORT.print(v_acc[1],6);
+    SERIAL_PORT.print(F(" v_acc[2]:"));
+    SERIAL_PORT.println(v_acc[2],6);
+  #endif
+
+
+  // 今回の移動距離(速度*s) を 基準座標系の移動距離に変換
+  // 移動距離=v_acc[x y z] * s
+  dlt[0]=cb.dt[0][0]*v_acc[0]*s+cb.dt[0][1]*v_acc[1]*s+cb.dt[0][2]*v_acc[2]*s;
+  dlt[1]=cb.dt[1][0]*v_acc[0]*s+cb.dt[1][1]*v_acc[1]*s+cb.dt[1][2]*v_acc[2]*s;
+  dlt[2]=cb.dt[2][0]*v_acc[0]*s+cb.dt[2][1]*v_acc[1]*s+cb.dt[2][2]*v_acc[2]*s;
+
+  // 基準座標系の距離を積分
+  tf_dlt[0] += dlt[0];   
+  tf_dlt[1] += dlt[1];
+  tf_dlt[2] += dlt[2]; 
+
+
+  //#define KKKK5
+  #ifdef KKKK5
     SERIAL_PORT.print(F("tf_dlt[0]:"));
     SERIAL_PORT.print(tf_dlt[0],8);
     SERIAL_PORT.print(F(" tf_dlt[1]:"));

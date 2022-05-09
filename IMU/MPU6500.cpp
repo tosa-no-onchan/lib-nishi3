@@ -54,12 +54,14 @@ cMPU6500::cMPU6500()
   //aRes = 9.80665/8192.0;     // 4g
   //aRes = 9.80665/4096.0;     // 8g
   //aRes = 9.80665/2048.0;     // 16g
-  aRes = 9.80665/ACC_MAX_G; 
+  aRes = 9.80665/ACC_1G; 
 
   gRes = 1.0/16.4;   // 2000dps
 
   //mRes = 10.*4912./8190.;  // 14BIT
   mRes = 10.*4912./32760.; // 16BIT
+
+  zero_off=0.0;
 
 }
 
@@ -78,8 +80,24 @@ bool cMPU6500::begin(){
   MPU_SPI.begin(18,19,23,5);
 
   MPU_SPI.setDataMode( SPI_MODE3 );
+  //MPU_SPI.setDataMode( SPI_MODE0 );     // changed by nishi 2022.5.22
   MPU_SPI.setBitOrder( MSBFIRST );
-  MPU_SPI.setClockDivider( SPI_CLOCK_DIV128 ); // 108Mhz/128 = 0.8MHz
+
+  // This defines are not representing the real Divider of the ESP32
+  // the Defines match to an AVR Arduino on 16MHz for better compatibility
+  //#define SPI_CLOCK_DIV2    0x00101001 //8 MHz
+  //#define SPI_CLOCK_DIV4    0x00241001 //4 MHz
+  //#define SPI_CLOCK_DIV8    0x004c1001 //2 MHz
+  //#define SPI_CLOCK_DIV16   0x009c1001 //1 MHz
+  //#define SPI_CLOCK_DIV32   0x013c1001 //500 KHz
+  //#define SPI_CLOCK_DIV64   0x027c1001 //250 KHz
+  //#define SPI_CLOCK_DIV128  0x04fc1001 //125 KHz
+
+  // MPU-6500  6.5 SPI INTERFACE The maximum frequency of SCLK is 1MHz / 3.5.1 fSCLK = 20 MHz  どっち?
+  //MPU_SPI.setClockDivider( SPI_CLOCK_DIV16 ); // 1 MHz  chaned by nishi 2022.5.2 
+  //MPU_SPI.setClockDivider( SPI_CLOCK_DIV32 ); // 500 KHz
+  MPU_SPI.setClockDivider( SPI_CLOCK_DIV128 ); // 500 KHz
+
   digitalWrite(MPU_CS_PIN, HIGH);
   //delay( 100 );
   delay( 300 );		// changed by nishi 2021.10.6
@@ -109,17 +127,7 @@ bool cMPU6500::begin(){
       mag_init();
     #endif
 
-    // This defines are not representing the real Divider of the ESP32
-    // the Defines match to an AVR Arduino on 16MHz for better compatibility
-    //#define SPI_CLOCK_DIV2    0x00101001 //8 MHz
-    //#define SPI_CLOCK_DIV4    0x00241001 //4 MHz
-    //#define SPI_CLOCK_DIV8    0x004c1001 //2 MHz
-    //#define SPI_CLOCK_DIV16   0x009c1001 //1 MHz
-    //#define SPI_CLOCK_DIV32   0x013c1001 //500 KHz
-    //#define SPI_CLOCK_DIV64   0x027c1001 //250 KHz
-    //#define SPI_CLOCK_DIV128  0x04fc1001 //125 KHz
-    //MPU_SPI.setClockDivider( SPI_CLOCK_DIV8 ); // 2 MHz
-    MPU_SPI.setClockDivider( SPI_CLOCK_DIV4 ); // 4 MHz
+    MPU_SPI.setClockDivider( SPI_CLOCK_DIV16 ); // 1 MHz  chaned by nishi 2022.5.2 
   }
   else{
 	Serial.print("cMPU6500::begin(): #1 ");
@@ -157,8 +165,8 @@ void cMPU6500::init( void ){
 	delay(1);
 	//imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_INT_ENABLE, ENABLE);
 	// changed by nishi ENABLE == 1 ?
-	imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_INT_ENABLE, 1);
-	//imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_INT_ENABLE, 0);    // changed by nishi 2022.5.1
+	//imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_INT_ENABLE, 1);
+	imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_INT_ENABLE, 0);    // changed by nishi 2022.5.1
 	delay(1);
 	//MPU6500 Set Sensors
 	imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_PWR_MGMT_2, MPU6500_XYZ_GYRO & MPU6500_XYZ_ACCEL);
@@ -173,7 +181,7 @@ void cMPU6500::init( void ){
 	//Fchoice_b[1:0] = [00] enable DLPF
 	//  MPU6500_GYRO_CONFIG:0x1b -> ジャイロの感度設定 by nishi
 	imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_GYRO_CONFIG, (MPU6500_FSR_2000DPS << 3));
-	delay(1);
+  delay(1);
 	//MPU6500 Set Full Scale Accel Range PS:2G
 	//  MPU6500_ACCEL_CONFIG:0x1c -> 加速度計の感度設定 by nishi
 	//imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_ACCEL_CONFIG, (MPU6500_FSR_2G << 3));
@@ -191,11 +199,21 @@ void cMPU6500::init( void ){
 	//MPU6500 Set Gyro DLPF
 	data = imu_spi_read(MPU6500_SPIx_ADDR, MPU6500_CONFIG);
   //data |=MPU6500_GYRO_DLPF_41HZ;
-  data &= 0xc0;     // clear bit add by nishi 2022.5.1
-  data |=MPU6500_GYRO_DLPF_5HZ;
+  //data &= 0xc0;     // clear bit add by nishi 2022.5.1
+  //data = 0x40;
+  data = 0x02;
+  //data |=MPU6500_GYRO_DLPF_5HZ;
 	//imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_CONFIG, MPU6500_GYRO_DLPF_41HZ);
 	imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_CONFIG, data); // changed by nishi 2022.5.1
-  delay(1);
+  //delay(1);
+  delay(10);
+
+	data = imu_spi_read(MPU6500_SPIx_ADDR, MPU6500_CONFIG);
+	Serial.print("cMPU6500::begin(): MPU6500_CONFIG=");
+	Serial.println(MPU6500_CONFIG, HEX);    // 0x1a
+  while(1){
+    delay(100);
+  }
 
 	#ifdef USE_MPU6500_AK8963
 		//MPU6500 Set SPI Mode
@@ -244,11 +262,11 @@ void cMPU6500::init( void ){
 	#endif
 
 	//
-	imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_I2C_SLV4_CTRL, 0x09);
-	delay(1);
+	//imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_I2C_SLV4_CTRL, 0x09);
+	//delay(1);
 	//
-	imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_I2C_MST_DELAY_CTRL, 0x81);
-	delay(100);
+	//imu_spi_write(MPU6500_SPIx_ADDR, MPU6500_I2C_MST_DELAY_CTRL, 0x81);
+	//delay(100);
 }
 
 /*---------------------------------------------------------------------------
@@ -407,8 +425,14 @@ void cMPU6500::gyro_common(){
   }
   gyroADC[0] -= gyroZero[0];
   gyroADC[1] -= gyroZero[1];
-  //gyroADC[2] -= gyroZero[2];
+  gyroADC[2] -= gyroZero[2];
 
+  // GYRO 0 noise cut off
+  for (int axis = 0; axis < 3; axis++){
+    if (abs(gyroADC[axis]) <= GYRO_NOISE_CUT_OFF){
+      gyroADC[axis] = 0;
+    }
+  }
 }
 
 /*---------------------------------------------------------------------------

@@ -19,7 +19,6 @@
 
 #include "Define.h"
 
-
 // add by nishi
 #define MPU6500_IMU
 #define USE_ACC_NISHI
@@ -34,30 +33,77 @@
 //#define USE_ACC_4G
 //#define USE_ACC_8G
 
+#define GYRO_NOISE_CUT_OFF 4
+
 #if defined(USE_ACC_2G)
-	#define ACC_MAX_G 16384.0
+	#define ACC_1G 16384.0
 	#define ACC_X_CUT_OFF 16.0
 	#define ACC_Y_CUT_OFF 16.0
 	#define ACC_Z_CUT_OFF_P 16.0
 	#define ACC_Z_CUT_OFF_M -16.0
+
+	#define ACC_ZERO_Z_OVER 3000
+
+	// 速度を Cut Off
+	//#define VX_CUT_OFF 0.3
+	#define VX_CUT_OFF 0.005
+	//#define VY_CUT_OFF 0.3
+	#define VY_CUT_OFF 0.005
+	//#define VZ_CUT_OFF 0.3
+	#define VZ_CUT_OFF 0.005
+
+	#define VX_CUT_OFF_PRE 0.4
+	#define VY_CUT_OFF_PRE 0.4
+	#define VZ_CUT_OFF_PRE 0.4
+
+
 #elif defined(USE_ACC_4G)
-	#define ACC_MAX_G 8192.0
+	#define ACC_1G 8192.0
 	#define ACC_X_CUT_OFF 16.0
 	#define ACC_Y_CUT_OFF 16.0
 	#define ACC_Z_CUT_OFF_P 16.0
 	#define ACC_Z_CUT_OFF_M -16.0
+
+	#define ACC_ZERO_Z_OVER 3000
+
+	// 速度を Cut Off
+	//#define VX_CUT_OFF 0.3
+	#define VX_CUT_OFF 0.005
+	//#define VY_CUT_OFF 0.3
+	#define VY_CUT_OFF 0.005
+	//#define VZ_CUT_OFF 0.3
+	#define VZ_CUT_OFF 0.005
+
+	#define VX_CUT_OFF_PRE 0.4
+	#define VY_CUT_OFF_PRE 0.4
+	#define VZ_CUT_OFF_PRE 0.4
+
 #else
-	#define ACC_MAX_G 4096.0
+	#define ACC_1G 4096.0
 	#define ACC_X_CUT_OFF 16.0
 	#define ACC_Y_CUT_OFF 16.0
 	#define ACC_Z_CUT_OFF_P 16.0
 	#define ACC_Z_CUT_OFF_M -16.0
+
+	#define ACC_ZERO_Z_OVER 3000
+
+	// 速度を Cut Off
+	//#define VX_CUT_OFF 0.3
+	#define VX_CUT_OFF 0.005
+	//#define VY_CUT_OFF 0.3
+	#define VY_CUT_OFF 0.005
+	//#define VZ_CUT_OFF 0.3
+	#define VZ_CUT_OFF 0.005
+
+	#define VX_CUT_OFF_PRE 0.4
+	#define VY_CUT_OFF_PRE 0.4
+	#define VZ_CUT_OFF_PRE 0.4
+
 #endif
 
 #include "MPU6500_REGS.h"
 
 
-#define ACC_1G     512
 #define GYRO_SCALE (4 / 16.4 * PI / 180.0 / 1000000.0) //16.4 LSB = 1 deg/s
 
 
@@ -65,8 +111,6 @@
 // changed by nishi
 #define MPU_SPI   SPI
 
-// add by nishi 2021.10.7
-#define IMU_SENSER6
 
 #define SERIAL_PORT Serial
 
@@ -108,6 +152,7 @@ class cMPU6500
 	float aRes;
 	float gRes;
 	float mRes;
+	float zero_off;
 
     int16_t AK8963_ASA[3];
 

@@ -18,11 +18,24 @@
 #include <Arduino.h>
 
 #include <SPI.h>
+
 // changed by nishi
-//#include "MPU9250.h"
 //#include "MPU6500.h"
-//#include "ICM20648.h"
+
 #include "ICM20948.h"
+// ICM20948.h を使わない時に、ICM_20948.h: No such file or directory エラーが出る場合は、 
+// 下記、 インクルードを有効にして下さい。
+//#include <ICM_20948.h>
+// そうすると、SparkFun_ICM-20948_ArduinoLibrary/src/ICM_20948.cpp がビルドされて、ライブラリーが作成されて、
+// コンパイルが出来ます。
+
+//#include "LSM9DS1.h"
+// LSM9DS.h を使わない時に、SparkFunLSM9DS1.h: No such file or directory エラーが出る場合は、
+// 下記、 インクルードを有効にして下さい。
+#include <SparkFunLSM9DS1.h>
+// そうすると、SparkFun_LSM9DS1_Arduino_Library/src/SparkFunLSM9DS1.cpp がビルドされて、ライブラリーが作成されて、
+// コンパイルが出来ます。
+
 #include "MadgwickAHRS.h"
 
 // changed by nishi
@@ -41,17 +54,15 @@ struct CB{
 class cIMU
 {
 public:
-	//cMPU9250 SEN;
-  #if defined(MPU6500_IMU)
-	  cMPU6500 SEN;
-  #endif
   // changed by nishi
-  //cIMUDevice SEN;
-  //cICM20648 SEN;
   #if defined(ICM20948_IMU)
     cICM20948 SEN;
+  #elif defined(LSM9DS1_IMU)
+    cLSM9DS1 SEN;
+  #elif defined(MPU6500_IMU)
+  	cMPU6500 SEN;
   #endif
-  
+ 
 	int16_t angle[3];
   float   rpy[3];
   float   quat[4];
@@ -64,9 +75,9 @@ public:
   int16_t magData[3];
   int16_t magRaw[3];
 
-  double ax, ay, az;
-  float gx, gy, gz;
-  float mx, my, mz;
+  double ax, ay, az, ax0, ay0, az0;
+  float gx, gy, gz, gx0, gy0, gz0;
+  float mx, my, mz, mx0, my0, mz0;
 
 	bool bConnected;
 
@@ -125,7 +136,7 @@ private:
 
   #endif
 
-  void computeTF(unsigned long process_time,double *dlt);
+  void computeTF(unsigned long process_time);
   void compCBvBdt(float q[4],float vB[3],double dt,double *Pn);
 
 };

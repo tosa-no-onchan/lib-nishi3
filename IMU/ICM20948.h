@@ -9,6 +9,7 @@
 #include <Arduino.h>
 #include "Define.h"
 
+//#include "use_def.h"
 // add by nishi
 #define ICM20948_IMU
 //#define USE_SPARK_LIB
@@ -41,12 +42,15 @@
 //  Initial Tolerance Board-level, all axes ±50 [mg]
 //aRes = 8.0/32768.0;      // 8g    16bit -> 8G
 
+#define GYRO_NOISE_CUT_OFF 4
+
 #if defined(USE_ACC_2G)
-	#define ACC_MAX_G 16384.0
-    #define ACC_X_CUT_OFF 40.0    // 2G  with Low pass filter  ICM20948_ACCEL_BW_6HZ
-    #define ACC_Y_CUT_OFF 40.0    // 
-    #define ACC_Z_CUT_OFF_P 40.0  // 
-	#define ACC_Z_CUT_OFF_M -40.0 // 
+	#define ACC_1G 16384.0
+	#define ACC_ZERO_OFF 	5.0		// + で上へ行く。 - で下に行く
+    #define ACC_X_CUT_OFF 35.0    // 2G  with Low pass filter  ICM20948_ACCEL_BW_6HZ
+    #define ACC_Y_CUT_OFF 35.0    // 
+    #define ACC_Z_CUT_OFF_P 35.0  // 
+	#define ACC_Z_CUT_OFF_M -35.0 // 
 
     //#define ACC_X_CUT_OFF 300.0    // 2G  without Low pass filter
     //#define ACC_Y_CUT_OFF 300.0    // 
@@ -58,33 +62,73 @@
     //#define ACC_Z_CUT_OFF_P 150.0  // 
     //#define ACC_Z_CUT_OFF_M -150.0 // 
 
+	#define ACC_ZERO_Z_OVER 3000
+
+	// 速度を Cut Off
+	//#define VX_CUT_OFF 0.3
+	#define VX_CUT_OFF 0.005
+	//#define VY_CUT_OFF 0.3
+	#define VY_CUT_OFF 0.005
+	//#define VZ_CUT_OFF 0.3
+	#define VZ_CUT_OFF 0.005
+
+	#define VX_CUT_OFF_PRE 0.4
+	#define VY_CUT_OFF_PRE 0.4
+	#define VZ_CUT_OFF_PRE 0.4
+
+
 #elif defined(USE_ACC_4G)
-	#define ACC_MAX_G  8192.0
-    //#define ACC_X_CUT_OFF 20.0    // 4G - 16G
-    //#define ACC_Y_CUT_OFF 20.0    // 4G - 16G
-    //#define ACC_Z_CUT_OFF_P 20.0  // 4G - 16G
-    //#define ACC_Z_CUT_OFF_M -20.0 // 4G - 16G
+	#define ACC_1G  8192.0
+	#define ACC_ZERO_OFF -0.1		// + で上へ行く。 - で下に行く
+    #define ACC_X_CUT_OFF 20.0    // 4G - 16G
+    #define ACC_Y_CUT_OFF 20.0    // 4G - 16G
+    #define ACC_Z_CUT_OFF_P 20.0  // 4G - 16G
+    #define ACC_Z_CUT_OFF_M -20.0 // 4G - 16G
+
+	#define ACC_ZERO_Z_OVER 1500
+
+	// 速度を Cut Off
+	//#define VX_CUT_OFF 0.3
+	#define VX_CUT_OFF 0.005
+	//#define VY_CUT_OFF 0.3
+	#define VY_CUT_OFF 0.005
+	//#define VZ_CUT_OFF 0.3
+	#define VZ_CUT_OFF 0.005
+
+	#define VX_CUT_OFF_PRE 0.4
+	#define VY_CUT_OFF_PRE 0.4
+	#define VZ_CUT_OFF_PRE 0.4
 
 #else
-	#define ACC_MAX_G  4096.0
-    //#define ACC_X_CUT_OFF 20.0    // 4G - 16G
-    //#define ACC_Y_CUT_OFF 20.0    // 4G - 16G
-    //#define ACC_Z_CUT_OFF_P 20.0  // 4G - 16G
-    //#define ACC_Z_CUT_OFF_M -20.0 // 4G - 16G
+	#define ACC_1G  4096.0
+	#define ACC_ZERO_OFF 0.15		// + で上へ行く。 - で下に行く
+    #define ACC_X_CUT_OFF 20.0    // 4G - 16G
+    #define ACC_Y_CUT_OFF 20.0    // 4G - 16G
+    #define ACC_Z_CUT_OFF_P 20.0  // 4G - 16G
+    #define ACC_Z_CUT_OFF_M -20.0 // 4G - 16G
+
+	#define ACC_ZERO_Z_OVER 750
+
+	// 速度を Cut Off
+	//#define VX_CUT_OFF 0.3
+	#define VX_CUT_OFF 0.005
+	//#define VY_CUT_OFF 0.3
+	#define VY_CUT_OFF 0.005
+	//#define VZ_CUT_OFF 0.3
+	#define VZ_CUT_OFF 0.005
+
+	#define VX_CUT_OFF_PRE 0.4
+	#define VY_CUT_OFF_PRE 0.4
+	#define VZ_CUT_OFF_PRE 0.4
+
 #endif
-    //#define ACC_X_CUT_OFF 16.0
-    //#define ACC_Y_CUT_OFF 16.0
-    //#define ACC_Z_CUT_OFF_P 16.0
-    //#define ACC_Z_CUT_OFF_M -16.0
 
 
-#ifdef USE_SPARK_LIB
-#include <ICM_20948.h> // Click here to get the library: http://librarymanager/All#SparkFun_ICM_20948_IMU
+#if defined(USE_SPARK_LIB)
+	#include <ICM_20948.h>  		// Click here to get the library: http://librarymanager/All#SparkFun_ICM_20948_IMU
 #else
-#include "ICM20948_REGS.h"
+	#include "ICM20948_spi.h"
 #endif
-
-#define ACC_1G     512
 
 //#define MPU_SPI   SPI_IMU
 // changed by nishi
@@ -159,10 +203,14 @@ public:
 	int32_t quatRAW[4];		// add by nishi
 	int32_t quatZero[4];		// add by nishi
 
+	//aRes = 9.80665/16384.0;    // 2g  -> 0.0005985504150390625
+	//aRes = 9.80665/8192.0;     // 4g	-> 0.001197100830078125
+	//aRes = 9.80665/4096.0;     // 8g	-> 0.00239420166015625
+	//aRes = 9.80665/2048.0;     // 16g	-> 0.0047884033203125
+	float aRes = 9.80665/ACC_1G;
 
-	float aRes;
-	float gRes;
-	float mRes;
+	float gRes = 1.0/16.4;   // 2000dps  -> 0.06097560975609757
+	float mRes = 0.15; // Sensitivity Scale Factor = 0.15
 	float zero_off;
 
 	#ifndef USE_SPARK_LIB
@@ -186,9 +234,9 @@ public:
 	bool acc_cali_get_done();
 
 	#ifdef USE_DMP_NISHI
-	void dmp_init( void );
-	bool dmp_get_adc();
-	bool dmp_cali_get_done();
+		void dmp_init( void );
+		bool dmp_get_adc();
+		bool dmp_cali_get_done();
 	#endif
 
 	void mag_init( void );
@@ -197,28 +245,13 @@ public:
 	void mag_cali_start();
 	bool mag_cali_get_done();
 
-	void AK09916_init(bool minimal=false);
-
-
 private:
-	void selectBank(uint8_t bank);
-	void spiRead(uint16_t addr, uint8_t *p_data, uint32_t length);
-	uint8_t spiReadByte(uint16_t addr);
-	void spiWriteByte(uint16_t addr, uint8_t data);
-	void spiWrite(uint16_t addr, uint8_t *data,uint32_t length);
-
 	#ifdef USE_SPARK_LIB
-	ICM_20948_SPI myICM; // If using SPI create an ICM_20948_SPI object
+		ICM_20948_SPI myICM; // If using SPI create an ICM_20948_SPI object
+	#else
+		cICM20948_spi _spi;
 	#endif
 
-	#ifndef USE_SPARK_LIB
-	int imu_spi_ak09916_reads(uint8_t akm_addr, uint8_t reg_addr, uint8_t len, uint8_t *data);
-	int imu_spi_ak09916_writes(uint8_t akm_addr, uint8_t reg_addr, uint8_t len, uint8_t *data);
-	int imu_spi_ak09916_write(uint8_t akm_addr, uint8_t reg_addr, uint8_t data);
-
-	ICM_20948_Status_e ICM_20948_i2c_controller_periph4_txn(uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len, bool Rw, bool send_reg_addr);
-
-	#endif
 	float invSqrt(float x);
 };
 
