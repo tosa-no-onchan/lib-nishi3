@@ -50,9 +50,9 @@ uint8_t cIMU::begin( uint32_t hz ){
   v_acc[1]=0.0;
   v_acc[2]=0.0;
 
-  v_acc_pre[0]=0.0;
-  v_acc_pre[1]=0.0;
-  v_acc_pre[2]=0.0;
+  v_acc_z[0]=0;
+  v_acc_z[1]=0;
+  v_acc_z[2]=0;
 
   tf_dlt[0]=0.0;
   tf_dlt[1]=0.0;
@@ -227,23 +227,23 @@ void cIMU::computeIMU( void ){
     #endif
   }
 
-  //SERIAL_PORT.print(F("gyroData[0]:"));
-  //SERIAL_PORT.print(gyroData[0]);
-  //SERIAL_PORT.print(F(" gyroData[1]:"));
-  //SERIAL_PORT.print(gyroData[1]);
-  //SERIAL_PORT.print(F(" gyroData[2]:"));
-  //SERIAL_PORT.println(gyroData[2]);
-
+  // 調整1.
+  // こでは、 Acc の生データをチェックします。
+  // IMU を 3軸方向に、個別に、5[cm] ほど、動かして停止させる、移動テスト をします。
+  // Arduino IDE Serial Plotter で、波形を観測して、
+  // 移動-停止毎に、上下の波形(山)の面積が大体同じか、確認します。
+  // 上下の波形(山)の面積が違う場合、特に、後の面積が大きいいばあいは、IMU の精度不足です。
+  // 別の IMU を使いましょう。
   //#define TEST_NISHI_5_K
   #if defined(TEST_NISHI_5_K)
     //SERIAL_PORT.print(F("SEN.accZero[2]:"));
     //SERIAL_PORT.print(SEN.accZero[2]);
     SERIAL_PORT.print(F("accData[0]:"));
-    SERIAL_PORT.print(accData[0]);
+    SERIAL_PORT.print(accData[0]-SEN.accZero[0]);
     SERIAL_PORT.print(F(" accData[1]:"));
-    SERIAL_PORT.println(accData[1]);
-    //SERIAL_PORT.print(F(" accData[2]:"));
-    //SERIAL_PORT.println(accData[2]);
+    SERIAL_PORT.print(accData[1]-SEN.accZero[1]);
+    SERIAL_PORT.print(F(" accData[2]:"));
+    SERIAL_PORT.println(accData[2]-SEN.accZero[2]);
   #endif
 
   #if defined(USE_ACC_NISHI)
@@ -256,14 +256,6 @@ void cIMU::computeIMU( void ){
     gx0 = (float)gyroData[0]*SEN.gRes;
     gy0 = (float)gyroData[1]*SEN.gRes;
     gz0 = (float)gyroData[2]*SEN.gRes;
-
-    //SERIAL_PORT.print(F("gx0:"));
-    //SERIAL_PORT.print(gx0,8);
-    //SERIAL_PORT.print(F(" gy0:"));
-    //SERIAL_PORT.print(gy0,8);
-    //SERIAL_PORT.print(F(" gz0:"));
-    //SERIAL_PORT.println(gz0,8);
-
   #endif
 
   #if defined(USE_MAG)
@@ -367,10 +359,25 @@ void cIMU::computeIMU( void ){
     // acc 計測値から、1G をキャンセルします。 -> 読み込み値での計算
     // SEN.zero_off(ACC_ZERO_OFF) を調整して、az が、 0軸 近辺を 中心 に振幅するようにします。
     ax = (double)accData[0] - acc_Zero[0];
+    //ax = (double)accData[0] - acc_Zero[1];
     ay = (double)accData[1] - acc_Zero[1];
+    //ay = (double)accData[1] - acc_Zero[0];
     az = (double)accData[2] - acc_Zero[2];
 
 
+    // 調整2.
+    // こでは、 Acc の 1G キャンセルのバイアス値をチェックします。
+    // IMU を 静止させた状態でテストします。
+    // Arduino IDE Serial Plotter で、波形を観測して、
+    // Z 軸の波形の中心が、0 近辺になるように、ICM20948.h の ACC_ZERO_OFF を調整します。
+    // 此処の調整が、自動化出来れば、ありがたいです。
+    // 調整3.
+    // IMU を 3軸方向に、個別に、5[cm] ほど、動かして停止させる、移動テスト をします。
+    // Arduino IDE Serial Plotter で、波形を観測して、
+    // 移動-停止毎に、上下に、半波(1山)が、同じ様に観測されれば、OK です。
+    // 同じ様に、観測されなければ、MadgwickAHRS.cpp の betaDef を調整します。
+    // 同じ面積にならないと、揺り戻しの、誤った動きをします。
+    // こは、大体で、OK です。最終調整は、調整5. で出来ます。
     //#define TEST_11_3
     #if defined(TEST_11_3)
       //if(az > -3000 && fabs(az) < 15000){
@@ -388,8 +395,28 @@ void cIMU::computeIMU( void ){
     if (fabs(ay) <= ACC_Y_CUT_OFF) ay = 0;
     if (fabs(az) <= ACC_Z_CUT_OFF_P) az = 0;
 
-    // ax,ay,az を、 表示して、 Arduino IDE の Serial plotter で、ACC_X_CUT_OFF の範囲を決めます。
-    // SEN.zero_off(ACC_ZERO_OFF) を調整して、ax,ay,az が 0 になるようにします。
+    // 加速度の履歴を作成
+    v_acc_z[0] <<=1;
+    v_acc_z[1] <<=1;
+    v_acc_z[2] <<=1;
+    if(ax != 0)
+      v_acc_z[0] +=1;
+    if(ay != 0)
+      v_acc_z[1] +=1;
+    if(az != 0)
+      v_acc_z[2] +=1;
+    
+    v_acc_z[0] &= 0x000f;
+    v_acc_z[1] &= 0x000f;
+    v_acc_z[2] &= 0x000f;
+
+    // 調整4.
+    // こでは、 Acc の 1G 時の CUT OFF を決めます。
+    // IMU を 静止させた状態でテストします。
+    // Arduino IDE Serial Plotter で、波形を観測して、
+    // ax,ay,az が、0 表示されるか確認します。
+    // もし、波形が観測されたなら、ACC_X_CUT_OFF、ACC_Y_CUT_OFF、ACC_Z_CUT_OFF_P を調整します。
+    // この CUT_OFF は、なるべく小さいほうが良いです。
     //#define TEST_11_5
     #if defined(TEST_11_5)
       //if(az > -3000 && fabs(az) < 15000){
@@ -404,6 +431,7 @@ void cIMU::computeIMU( void ){
 
     // Madgwick Caliburation OK?
     if(cali_tf >= 7000){
+      // こちらは、調整3. と同じですが、MadgwickAHRS のキャリブレーションごのチェックになります。
       //#define TEST_11_6
       #if defined(TEST_11_6)
         SERIAL_PORT.print(F("ax:"));
@@ -413,29 +441,6 @@ void cIMU::computeIMU( void ){
         SERIAL_PORT.print(F(" az:"));
         SERIAL_PORT.println(az,6);
       #endif
-
-      //SERIAL_PORT.print(F("accData[0]:"));
-      //SERIAL_PORT.print(accData[0],8);
-      //SERIAL_PORT.print(F(" accData[1]:"));
-      //SERIAL_PORT.print(accData[1],8);
-      //SERIAL_PORT.print(F(" accData[2]:"));
-      //SERIAL_PORT.println(accData[2],8);
-
-
-      //SERIAL_PORT.print(F("gyroData[0]:"));
-      //SERIAL_PORT.print(gyroData[0]);
-      //SERIAL_PORT.print(F(" gyroData[1]:"));
-      //SERIAL_PORT.print(gyroData[1]);
-      //SERIAL_PORT.print(F(" gyroData[2]:"));
-      //SERIAL_PORT.println(gyroData[2]);
-
-
-      //SERIAL_PORT.print(F(" accRaw[0]:"));
-      //SERIAL_PORT.println(accRaw[0],8);
-      //SERIAL_PORT.print(F(" accRaw[1]:"));
-      //SERIAL_PORT.println(accRaw[1],8);
-      //SERIAL_PORT.print(F(" accRaw[2]:"));
-      //SERIAL_PORT.println(accRaw[2],8);
 
       quat[0] = quat_tmp[0];  // W
       quat[1] = quat_tmp[1];  // X
@@ -452,22 +457,6 @@ void cIMU::computeIMU( void ){
     quat[1] = filter.q1;  // X
     quat[2] = filter.q2;  // Y
     quat[3] = filter.q3;  // Z
-  #endif
-
-
-  #ifdef XXX_0
-  uint32_t t = millis();
-  ac_cnt++;
-  if(t > tTime[0]){
-
-    uint32_t hz = ac_cnt/5;
-
-    SERIAL_PORT.print(F("acc_hz:"));
-    SERIAL_PORT.println(hz, 4);
-
-    tTime[0] = t + 5000;	// set 1-cycle-time [ms] to odom Timer.
-    ac_cnt=0;
-  }
   #endif
 
 }
@@ -487,21 +476,25 @@ void cIMU::computeTF(unsigned long process_time){
 
   //QuaternionToEulerAngles(quat[0], quat[1], quat[2], quat[3],roll, pitch, yaw);
 
-
   // 今のロボット速度を計算。   [ax ay az]*s を積分 
   v_acc[0] += ax*s*SEN.aRes;
   v_acc[1] += ay*s*SEN.aRes;
   v_acc[2] += az*s*SEN.aRes;
 
 
-  //#define KKKK2
+  // 調整5.
+  // IMU を 3軸方向に、個別に、5[cm] ほど、動かして停止させる、移動テスト をします。
+  // Arduino IDE Serial Plotter で、波形を観測して、
+  // 移動-停止毎に、半波(1山)が、きれいに観測されれば、OK です。
+  // 半波(1山)が、観測されなければ、MadgwickAHRS.cpp の betaDef を調整します。
+  #define KKKK2
   #if defined(KKKK2)
     SERIAL_PORT.print(F("v_acc[0]:"));
-    SERIAL_PORT.print(v_acc[0],8);
+    SERIAL_PORT.print(v_acc[0]*1000.0,8);
     SERIAL_PORT.print(F(" v_acc[1]:"));
-    SERIAL_PORT.print(v_acc[1],8);
+    SERIAL_PORT.print(v_acc[1]*1000.0,8);
     SERIAL_PORT.print(F(" v_acc[2]:"));
-    SERIAL_PORT.println(v_acc[2],8);
+    SERIAL_PORT.println(v_acc[2]*1000.0,8);
   #endif
 
   // v_acc[0]:-1.672498 v_acc[1]:-0.916505 v_acc[2]:0.888893
@@ -511,33 +504,27 @@ void cIMU::computeTF(unsigned long process_time){
   //#define VY_CUT_OFF 0.4
   //#define VZ_CUT_OFF 0.4
 
-  if(ax == 0.0){
-    if(fabsf(v_acc[0]) <= VX_CUT_OFF)
-      v_acc[0]=0.0;
-    if(v_acc[0] <= VX_CUT_OFF_PRE && v_acc[0] == v_acc_pre[0]){
-      v_acc[0]=0.0;
-    }
+  // now and passed 3 acc are all 0?
+  // 今回+過去の 3この 速度が同じで、一定速以下の場合、速度をクリアします。
+  if(fabsf(v_acc[0]) <= VX_MAX_CUT_OFF && v_acc_z[0] == 0){
+    v_acc[0]=0.0;
   }
-  if(ay == 0.0){
-    if(fabsf(v_acc[1]) <= VY_CUT_OFF)
-      v_acc[1]=0.0;
-    if(v_acc[1] <= VY_CUT_OFF_PRE && v_acc[1] == v_acc_pre[1]){
-      v_acc[1]=0.0;
-    }
+  if(fabsf(v_acc[1]) <= VY_MAX_CUT_OFF && v_acc_z[1] == 0){
+    v_acc[1]=0.0;
   }
-  if(az== 0.0){
-    if(fabsf(v_acc[2]) <= VZ_CUT_OFF)
-      v_acc[2]=0.0;
-    if(v_acc[2] <= VZ_CUT_OFF_PRE && v_acc[2] == v_acc_pre[2]){
-      v_acc[2]=0.0;
-    }
+  if(fabsf(v_acc[2]) <= VZ_MAX_CUT_OFF && v_acc_z[2] == 0){
+    v_acc[2]=0.0;
   }
-  v_acc_pre[0]=v_acc[0];
-  v_acc_pre[1]=v_acc[1];
-  v_acc_pre[2]=v_acc[2];
 
-  // IMU を静止させた状態で、下記値が、0 を示すように、Cut Off を決めます。
-  #define KKKK3
+  // 調整6.
+  // IMU を 3軸方向に、個別に、色々、動かして停止させる、移動テスト をします。
+  // Rviz 上の tf-base-footprint が暴走しないか、確認します。
+  // 暴走するようであれば、VX_MAX_CUT_OFF、VY_MAX_CUT_OFF、VZ_MAX_CUT_OFF を調整するか、
+  // 今までのアルゴリズムを見直す必要があります。
+  // 注) VX_MAX_CUT_OFF、VY_MAX_CUT_OFF、VZ_MAX_CUT_OFF を大きくしすぎると、定速で移動している場合を、
+  // 含んでしまうので、要注意です。
+  // v_acc_z のマスク数を増やすのも、一手かも!!
+  //#define KKKK3
   #ifdef KKKK3
     SERIAL_PORT.print(F("v_acc[0]:"));
     SERIAL_PORT.print(v_acc[0],6);

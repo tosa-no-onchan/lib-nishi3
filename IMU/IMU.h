@@ -87,7 +87,7 @@ public:
 
   float tf_dlt[3];
   float v_acc[3];
-  float v_acc_pre[3];
+  uint16_t v_acc_z[3];
 
   int16_t cali_tf;    // Madgwick Caliburation count
 

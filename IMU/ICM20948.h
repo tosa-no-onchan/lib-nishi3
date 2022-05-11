@@ -64,17 +64,28 @@
 
 	#define ACC_ZERO_Z_OVER 3000
 
+	// 速度
+	// 普通にIMU を振って、 0.1 位
+
 	// 速度を Cut Off
 	//#define VX_CUT_OFF 0.3
-	#define VX_CUT_OFF 0.005
-	//#define VY_CUT_OFF 0.3
-	#define VY_CUT_OFF 0.005
-	//#define VZ_CUT_OFF 0.3
-	#define VZ_CUT_OFF 0.005
+	//#define VX_CUT_OFF 0.25
+	//#define VX_CUT_OFF 0.08
+	#define VX_CUT_OFF 0.01
 
-	#define VX_CUT_OFF_PRE 0.4
-	#define VY_CUT_OFF_PRE 0.4
-	#define VZ_CUT_OFF_PRE 0.4
+	//#define VY_CUT_OFF 0.3
+	//#define VY_CUT_OFF 0.25
+	//#define VY_CUT_OFF 0.08
+	#define VY_CUT_OFF 0.01
+
+	//#define VZ_CUT_OFF 0.3
+	//#define VZ_CUT_OFF 0.25
+	//#define VZ_CUT_OFF 0.08
+	#define VZ_CUT_OFF 0.01
+
+	#define VX_MAX_CUT_OFF 0.35
+	#define VY_MAX_CUT_OFF 0.35
+	#define VZ_MAX_CUT_OFF 0.35
 
 
 #elif defined(USE_ACC_4G)
@@ -87,17 +98,22 @@
 
 	#define ACC_ZERO_Z_OVER 1500
 
+
 	// 速度を Cut Off
 	//#define VX_CUT_OFF 0.3
-	#define VX_CUT_OFF 0.005
-	//#define VY_CUT_OFF 0.3
-	#define VY_CUT_OFF 0.005
-	//#define VZ_CUT_OFF 0.3
-	#define VZ_CUT_OFF 0.005
+	//#define VX_CUT_OFF 0.25
+	//#define VX_CUT_OFF 0.08
+	#define VX_CUT_OFF 0.05
 
-	#define VX_CUT_OFF_PRE 0.4
-	#define VY_CUT_OFF_PRE 0.4
-	#define VZ_CUT_OFF_PRE 0.4
+	//#define VY_CUT_OFF 0.3
+	//#define VY_CUT_OFF 0.25
+	//#define VY_CUT_OFF 0.08
+	#define VY_CUT_OFF 0.05
+
+	//#define VZ_CUT_OFF 0.3
+	//#define VZ_CUT_OFF 0.25
+	//#define VZ_CUT_OFF 0.08
+	#define VZ_CUT_OFF 0.05
 
 #else
 	#define ACC_1G  4096.0
@@ -111,15 +127,19 @@
 
 	// 速度を Cut Off
 	//#define VX_CUT_OFF 0.3
-	#define VX_CUT_OFF 0.005
-	//#define VY_CUT_OFF 0.3
-	#define VY_CUT_OFF 0.005
-	//#define VZ_CUT_OFF 0.3
-	#define VZ_CUT_OFF 0.005
+	//#define VX_CUT_OFF 0.25
+	//#define VX_CUT_OFF 0.08
+	#define VX_CUT_OFF 0.05
 
-	#define VX_CUT_OFF_PRE 0.4
-	#define VY_CUT_OFF_PRE 0.4
-	#define VZ_CUT_OFF_PRE 0.4
+	//#define VY_CUT_OFF 0.3
+	//#define VY_CUT_OFF 0.25
+	//#define VY_CUT_OFF 0.08
+	#define VY_CUT_OFF 0.05
+
+	//#define VZ_CUT_OFF 0.3
+	//#define VZ_CUT_OFF 0.25
+	//#define VZ_CUT_OFF 0.08
+	#define VZ_CUT_OFF 0.05
 
 #endif
 

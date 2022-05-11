@@ -26,11 +26,16 @@
 // Definitions
 
 //#define sampleFreqDef   512.0f          // sample frequency in Hz
-#define sampleFreqDef   800.0f          // sample frequency in Hz
-#define betaDef         0.1f            // 2 * proportional gain
+//#define sampleFreqDef   800.0f          // sample frequency in Hz
+#define sampleFreqDef   686.0f
+//#define betaDef         0.1f            // 2 * proportional gain  original setting
 // test by nishi 2022.1.8
-//#define betaDef         0.001f            // 2 * proportional gain
-//#define betaDef         0.0025f            // 2 * proportional gain
+//#define betaDef         0.01f            // 2 * proportional gain
+//#define betaDef         0.009f            // 2 * proportional gain
+//#define betaDef         0.008f            // 2 * proportional gain
+//#define betaDef         0.007f            // 2 * proportional gain
+//#define betaDef         0.006f            // 2 * proportional gain
+#define betaDef         0.005f            // 2 * proportional gain
 
 
 //============================================================================================
