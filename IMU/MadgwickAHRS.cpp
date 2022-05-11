@@ -31,11 +31,8 @@
 //#define betaDef         0.1f            // 2 * proportional gain  original setting
 // test by nishi 2022.1.8
 //#define betaDef         0.01f            // 2 * proportional gain
-//#define betaDef         0.009f            // 2 * proportional gain
-//#define betaDef         0.008f            // 2 * proportional gain
-//#define betaDef         0.007f            // 2 * proportional gain
-//#define betaDef         0.006f            // 2 * proportional gain
-#define betaDef         0.005f            // 2 * proportional gain
+//#define betaDef         0.005f            // 2 * proportional gain 2022.5.11 test OK
+#define betaDef         0.004f            // 2 * proportional gain
 
 
 //============================================================================================

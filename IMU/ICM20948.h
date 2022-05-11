@@ -70,18 +70,18 @@
 	// 速度を Cut Off
 	//#define VX_CUT_OFF 0.3
 	//#define VX_CUT_OFF 0.25
-	//#define VX_CUT_OFF 0.08
-	#define VX_CUT_OFF 0.01
+	#define VX_CUT_OFF 0.08
+	//#define VX_CUT_OFF 0.1
 
 	//#define VY_CUT_OFF 0.3
 	//#define VY_CUT_OFF 0.25
-	//#define VY_CUT_OFF 0.08
-	#define VY_CUT_OFF 0.01
+	#define VY_CUT_OFF 0.08
+	//#define VY_CUT_OFF 0.1
 
 	//#define VZ_CUT_OFF 0.3
 	//#define VZ_CUT_OFF 0.25
-	//#define VZ_CUT_OFF 0.08
-	#define VZ_CUT_OFF 0.01
+	#define VZ_CUT_OFF 0.08
+	//#define VZ_CUT_OFF 0.1
 
 	#define VX_MAX_CUT_OFF 0.35
 	#define VY_MAX_CUT_OFF 0.35

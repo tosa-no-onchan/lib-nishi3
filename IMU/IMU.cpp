@@ -406,9 +406,9 @@ void cIMU::computeIMU( void ){
     if(az != 0)
       v_acc_z[2] +=1;
     
-    v_acc_z[0] &= 0x000f;
-    v_acc_z[1] &= 0x000f;
-    v_acc_z[2] &= 0x000f;
+    v_acc_z[0] &= 0x00ff;
+    v_acc_z[1] &= 0x00ff;
+    v_acc_z[2] &= 0x00ff;
 
     // 調整4.
     // こでは、 Acc の 1G 時の CUT OFF を決めます。
@@ -469,10 +469,15 @@ void cIMU::computeIMU( void ){
 ---------------------------------------------------------------------------*/
 void cIMU::computeTF(unsigned long process_time){
 
+  double dist[3];   // ロボット座標系 今回の移動距離 
   double dlt[3];    // 基準座標系 今回の移動距離
   //double v_acc_dlt[3];
 
   double s = (double)process_time/1000000.0;
+
+  dist[0]=0;
+  dist[1]=0;
+  dist[2]=0;
 
   //QuaternionToEulerAngles(quat[0], quat[1], quat[2], quat[3],roll, pitch, yaw);
 
@@ -504,15 +509,21 @@ void cIMU::computeTF(unsigned long process_time){
   //#define VY_CUT_OFF 0.4
   //#define VZ_CUT_OFF 0.4
 
-  // now and passed 3 acc are all 0?
-  // 今回+過去の 3この 速度が同じで、一定速以下の場合、速度をクリアします。
+  // now and passed 7 acc are all 0?
+  // 今回+過去の 8この 速度が同じで、一定速以下の場合、速度をクリアします。
   if(fabsf(v_acc[0]) <= VX_MAX_CUT_OFF && v_acc_z[0] == 0){
+    // 通り過ぎた分だけ戻す
+    dist[0] -= v_acc[0]*s*7.0;
     v_acc[0]=0.0;
   }
   if(fabsf(v_acc[1]) <= VY_MAX_CUT_OFF && v_acc_z[1] == 0){
+    // 通り過ぎた分だけ戻す
+    dist[1] -= v_acc[1]*s*7.0;
     v_acc[1]=0.0;
   }
   if(fabsf(v_acc[2]) <= VZ_MAX_CUT_OFF && v_acc_z[2] == 0){
+    // 通り過ぎた分だけ戻す
+    dist[2] -= v_acc[2]*s*7.0;
     v_acc[2]=0.0;
   }
 
@@ -534,12 +545,17 @@ void cIMU::computeTF(unsigned long process_time){
     SERIAL_PORT.println(v_acc[2],6);
   #endif
 
+  // 今回の移動距離(速度*s) ロボット座標系
+  dist[0] += v_acc[0]*s;
+  dist[1] += v_acc[1]*s;
+  dist[2] += v_acc[2]*s;
+
 
   // 今回の移動距離(速度*s) を 基準座標系の移動距離に変換
   // 移動距離=v_acc[x y z] * s
-  dlt[0]=cb.dt[0][0]*v_acc[0]*s+cb.dt[0][1]*v_acc[1]*s+cb.dt[0][2]*v_acc[2]*s;
-  dlt[1]=cb.dt[1][0]*v_acc[0]*s+cb.dt[1][1]*v_acc[1]*s+cb.dt[1][2]*v_acc[2]*s;
-  dlt[2]=cb.dt[2][0]*v_acc[0]*s+cb.dt[2][1]*v_acc[1]*s+cb.dt[2][2]*v_acc[2]*s;
+  dlt[0]=cb.dt[0][0]*dist[0]+cb.dt[0][1]*dist[1]+cb.dt[0][2]*dist[2];
+  dlt[1]=cb.dt[1][0]*dist[0]+cb.dt[1][1]*dist[1]+cb.dt[1][2]*dist[2];
+  dlt[2]=cb.dt[2][0]*dist[0]+cb.dt[2][1]*dist[1]+cb.dt[2][2]*dist[2];
 
   // 基準座標系の距離を積分
   tf_dlt[0] += dlt[0];   
