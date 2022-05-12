@@ -19,6 +19,10 @@
 
 #include <SPI.h>
 
+// IMU.cpp で、
+// https://github.com/xioTechnologies/Fusion を使う時、使用
+//#define USE_XIO_FUSION
+
 // changed by nishi
 //#include "MPU6500.h"
 
@@ -36,7 +40,12 @@
 // そうすると、SparkFun_LSM9DS1_Arduino_Library/src/SparkFunLSM9DS1.cpp がビルドされて、ライブラリーが作成されて、
 // コンパイルが出来ます。
 
-#include "MadgwickAHRS.h"
+#if defined(USE_XIO_FUSION)
+  #include <Fusion/Fusion.h>
+#else
+  #include "MadgwickAHRS.h"
+#endif
+
 
 // changed by nishi
 //#include "imu_selector.h"
@@ -93,6 +102,24 @@ public:
 
   float adjust[3];
 
+  #if defined(USE_XIO_FUSION)
+
+    const FusionAhrsSettings fu_settings = {
+            //.gain = 0.5f,
+            //.gain = 0.004f,
+            .gain = 0.0f,
+            .accelerationRejection = 10.0f,
+            .magneticRejection = 20.0f,
+            //.rejectionTimeout = 5 * SAMPLE_RATE, /* 5 seconds */
+            .rejectionTimeout = 5 * 686, /* 5 seconds */
+            //.rejectionTimeout = 0, /* 5 seconds */
+    };
+
+    FusionVector fu_ac;
+    FusionVector fu_gy;
+  #endif
+
+
   CB cb;
 
 public:
@@ -104,14 +131,13 @@ public:
 	uint8_t  begin( uint32_t hz = 800 );
 	uint16_t update( uint32_t option = 0 );
 
-  void QuaternionToEulerAngles(double q0, double q1, double q2, double q3,
-                             double& roll, double& pitch, double& yaw);
-  void CB2XYZ(float q[4],double *xyz);
-  void compCB(float q[4],CB *cb);
-
-
 private:
-  Madgwick filter;
+
+  #if defined(USE_XIO_FUSION)
+    FusionAhrs filter;
+  #else
+    Madgwick filter;
+  #endif
 
   uint32_t update_hz;
   //uint32_t update_us;
@@ -137,7 +163,7 @@ private:
   #endif
 
   void computeTF(unsigned long process_time);
-  void compCBvBdt(float q[4],float vB[3],double dt,double *Pn);
+  void compCB(float q[4],CB *cb);
 
 };
 

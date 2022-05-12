@@ -630,11 +630,13 @@ void cICM20948::gyro_common(){
   gyroADC[2] -= gyroZero[2];
 
   // GYRO 0 noise cut off
-  for (int axis = 0; axis < 3; axis++){
-    if (abs(gyroADC[axis]) <= GYRO_NOISE_CUT_OFF){
-      gyroADC[axis] = 0;
-    }
-  }
+  // MadgwickAHRS.cpp and FusionAhrs.c では、gyro値 = 0.0 だとアクセスエラーと
+  // 判定するみたいだ。 by nishi 2022.5.12
+  //for (int axis = 0; axis < 3; axis++){
+  //  if (abs(gyroADC[axis]) <= GYRO_NOISE_CUT_OFF){
+  //    //gyroADC[axis] = 0;
+  //  }
+  //}
 }
 
 void cICM20948::acc_init( void ){

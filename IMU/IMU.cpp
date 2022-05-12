@@ -75,9 +75,14 @@ uint8_t cIMU::begin( uint32_t hz ){
   }
   
   if( bConnected == true ){
-
-    filter.begin(update_hz);
-    //filter.begin();
+    #if defined(USE_XIO_FUSION)
+      //FusionOffsetInitialise(&offset, SAMPLE_RATE);
+      FusionAhrsInitialise(&filter);
+      FusionAhrsSetSettings(&filter, &fu_settings);
+    #else
+      filter.begin(update_hz);
+      //filter.begin();
+    #endif
 
     pre_time = millis();
 
@@ -288,8 +293,20 @@ void cIMU::computeIMU( void ){
   #ifdef USE_MADWICK
     #ifdef IMU_SENSER6
       if (SEN.calibratingG_f != 0 && SEN.calibratingA_f != 0){
-        filter.invSampleFreq = (float)process_time/1000000.0f;
-        filter.updateIMU(gx0, gy0, gz0, ax0, ay0, az0);
+        #if defined(USE_XIO_FUSION)
+          fu_ac.axis.x = ax0;
+          fu_ac.axis.y = ay0;
+          fu_ac.axis.z = az0;
+          fu_gy.axis.x = gx0;
+          fu_gy.axis.y = gy0;
+          fu_gy.axis.z = gz0;
+
+          FusionAhrsUpdateNoMagnetometer(&filter, fu_gy, fu_ac, (float)process_time/1000000.0f);
+          // filter.quaternion  此処に、 クォータニオンがある。
+        #else
+          filter.invSampleFreq = (float)process_time/1000000.0f;
+          filter.updateIMU(gx0, gy0, gz0, ax0, ay0, az0);
+        #endif
       }
       else{
         return;
@@ -304,14 +321,21 @@ void cIMU::computeIMU( void ){
       }
     #endif
 
-    rpy[0] = filter.getRoll();
-    rpy[1] = filter.getPitch();
-    rpy[2] = filter.getYaw()-180.;
+    #if defined(USE_XIO_FUSION)
+      quat_tmp[0] = filter.quaternion.element.w;  // W
+      quat_tmp[1] = filter.quaternion.element.x;  // X
+      quat_tmp[2] = filter.quaternion.element.y;  // Y
+      quat_tmp[3] = filter.quaternion.element.z;  // Z
+    #else
+      rpy[0] = filter.getRoll();
+      rpy[1] = filter.getPitch();
+      rpy[2] = filter.getYaw()-180.;
 
-    quat_tmp[0] = filter.q0;  // W
-    quat_tmp[1] = filter.q1;  // X
-    quat_tmp[2] = filter.q2;  // Y
-    quat_tmp[3] = filter.q3;  // Z
+      quat_tmp[0] = filter.q0;  // W
+      quat_tmp[1] = filter.q1;  // X
+      quat_tmp[2] = filter.q2;  // Y
+      quat_tmp[3] = filter.q3;  // Z
+    #endif
 
     //#define TEST_NISHI_5_D
     #ifdef TEST_NISHI_5_D
@@ -571,95 +595,6 @@ void cIMU::computeTF(unsigned long process_time){
     SERIAL_PORT.println(tf_dlt[1],8);
   #endif
 
-}
-
-void cIMU::QuaternionToEulerAngles(double q0, double q1, double q2, double q3,
-                             double& roll, double& pitch, double& yaw)
-{
-    double q0q0 = q0 * q0;
-    double q0q1 = q0 * q1;
-    double q0q2 = q0 * q2;
-    double q0q3 = q0 * q3;
-    double q1q1 = q1 * q1;
-    double q1q2 = q1 * q2;
-    double q1q3 = q1 * q3;
-    double q2q2 = q2 * q2;
-    double q2q3 = q2 * q3;
-    double q3q3 = q3 * q3;
-    roll = atan2(2.0 * (q2q3 + q0q1), q0q0 - q1q1 - q2q2 + q3q3);
-    pitch = asin(2.0 * (q0q2 - q1q3));
-    yaw = atan2(2.0 * (q1q2 + q0q3), q0q0 + q1q1 - q2q2 - q3q3);
-}
-
-/*
-* 基準座標での単位移動距離を計算
-*   P = [Px Py Pz] = CBvBdt
-* Input
-*  float q[4] : [q0 q1 q2 q3]
-*  float vB[3] : [vBx vBy vBz] 今の速度
-*  double dt: delta time
-* Output
-*  double Pn[3] : [Pxn Pyn Pzn] 基準座標での単位移動距離
-*/
-void cIMU::compCBvBdt(float q[4],float vB[3],double dt,double *Pn){
-
-    double q0q0 = q[0] * q[0];
-    double q0q1 = q[0] * q[1];
-    double q0q2 = q[0] * q[2];
-    double q0q3 = q[0] * q[3];
-    double q1q1 = q[1] * q[1];
-    double q1q2 = q[1] * q[2];
-    double q1q3 = q[1] * q[3];
-    double q2q2 = q[2] * q[2];
-    double q2q3 = q[2] * q[3];
-    double q3q3 = q[3] * q[3];
-
-    double CB[3][3];
-    CB[0][0] = q0q0+q1q1-q2q2-q3q3;
-    CB[0][1] = 2.0*(q1q2-q0q3);
-    CB[0][2] = 2.0*(q1q3+q0q2);
-    CB[1][0] = 2.0*(q1q2+q0q3);
-    CB[1][1] = q0q0-q1q1+q2q2-q3q3;
-    CB[1][2] = 2.0*(q2q3-q0q1);
-    CB[2][0] = 2.0*(q1q3-q0q2);
-    CB[2][1] = 2.0*(q2q3+q0q1);
-    CB[2][2] = q0q0-q1q1-q2q2+q3q3;
-
-    Pn[0]=(CB[0][0]*vB[0]+CB[0][1]*vB[1]+CB[0][2]*vB[2])*dt;
-    Pn[1]=(CB[1][0]*vB[0]+CB[1][1]*vB[1]+CB[1][2]*vB[2])*dt;
-    Pn[2]=(CB[2][0]*vB[0]+CB[2][1]*vB[1]+CB[2][2]*vB[2])*dt;
-}
-
-/*
-* クォータニオンを回転行列に変換して、X-Y-Z ベクトルを得る。
-*/
-void cIMU::CB2XYZ(float q[4],double *xyz){
-
-    double q0q0 = q[0] * q[0];
-    double q0q1 = q[0] * q[1];
-    double q0q2 = q[0] * q[2];
-    double q0q3 = q[0] * q[3];
-    double q1q1 = q[1] * q[1];
-    double q1q2 = q[1] * q[2];
-    double q1q3 = q[1] * q[3];
-    double q2q2 = q[2] * q[2];
-    double q2q3 = q[2] * q[3];
-    double q3q3 = q[3] * q[3];
-
-    double CB[3][3];
-    CB[0][0] = q0q0+q1q1-q2q2-q3q3;
-    CB[0][1] = 2.0*(q1q2-q0q3);
-    CB[0][2] = 2.0*(q1q3+q0q2);
-    CB[1][0] = 2.0*(q1q2+q0q3);
-    CB[1][1] = q0q0-q1q1+q2q2-q3q3;
-    CB[1][2] = 2.0*(q2q3-q0q1);
-    CB[2][0] = 2.0*(q1q3-q0q2);
-    CB[2][1] = 2.0*(q2q3+q0q1);
-    CB[2][2] = q0q0-q1q1-q2q2+q3q3;
-
-    xyz[0]=(CB[0][0]+CB[0][1]+CB[0][2]);
-    xyz[1]=(CB[1][0]+CB[1][1]+CB[1][2]);
-    xyz[2]=(CB[2][0]+CB[2][1]+CB[2][2]);
 }
 
 /*
