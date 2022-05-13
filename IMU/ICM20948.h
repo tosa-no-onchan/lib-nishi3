@@ -10,6 +10,10 @@
 #include "Define.h"
 
 
+// IMU.cpp で、
+// https://github.com/xioTechnologies/Fusion を使う時、使用
+//#define USE_XIO_FUSION
+
 //#include "use_def.h"
 // add by nishi
 #define ICM20948_IMU
@@ -48,10 +52,17 @@
 #if defined(USE_ACC_2G)
 	#define ACC_1G 16384.0
 	#define ACC_ZERO_OFF 	5.0		// + で上へ行く。 - で下に行く
-    #define ACC_X_CUT_OFF 35.0    // 2G  with Low pass filter  ICM20948_ACCEL_BW_6HZ
-    #define ACC_Y_CUT_OFF 35.0    // 
-    #define ACC_Z_CUT_OFF_P 35.0  // 
-	#define ACC_Z_CUT_OFF_M -35.0 // 
+	#if !defined(USE_XIO_FUSION)
+		#define ACC_X_CUT_OFF 35.0    // 2G  with Low pass filter  ICM20948_ACCEL_BW_6HZ
+		#define ACC_Y_CUT_OFF 35.0    // 
+		#define ACC_Z_CUT_OFF_P 35.0  // 
+		#define ACC_Z_CUT_OFF_M -35.0 // 
+	#else
+		#define ACC_X_CUT_OFF 100.0    // 2G  with Low pass filter  ICM20948_ACCEL_BW_6HZ
+		#define ACC_Y_CUT_OFF 240.0    // 
+		#define ACC_Z_CUT_OFF_P 80.0  // 
+		#define ACC_Z_CUT_OFF_M -80.0 // 
+	#endif
 
     //#define ACC_X_CUT_OFF 300.0    // 2G  without Low pass filter
     //#define ACC_Y_CUT_OFF 300.0    // 
@@ -224,13 +235,13 @@ public:
 	int32_t quatRAW[4];		// add by nishi
 	int32_t quatZero[4];		// add by nishi
 
-	//aRes = 9.80665/16384.0;    // 2g  -> 0.0005985504150390625
-	//aRes = 9.80665/8192.0;     // 4g	-> 0.001197100830078125
-	//aRes = 9.80665/4096.0;     // 8g	-> 0.00239420166015625
-	//aRes = 9.80665/2048.0;     // 16g	-> 0.0047884033203125
-	float aRes = 9.80665/ACC_1G;
+	//aRes = 1.0/16384.0;    // 2g  -> 16384[LSB/g]  ax,ay,az=16384 で、 1[g] を示す。
+	//aRes = 1.0/8192.0;     // 4g  -> 8192[LSB/g]	ax,ay,az=8192 で、 1[g] を示す。
+	//aRes = 1.0/4096.0;     // 8g  -> 4096[LSB/g]	ax,ay,az=4096 で、 1[g] を示す。
+	//aRes = 1.0/2048.0;     // 16g	-> 2048[LSB/g]	ax,ay,az=2048 で、 1[g] を示す。
+	float aRes = 1.0/ACC_1G;	//  [G]
 
-	float gRes = 1.0/16.4;   // 2000dps  -> 0.06097560975609757
+	float gRes = 1.0/16.4;   // 2000dps -> 16.4[LSB/dps] gx,gy,gz=16.4 で、 1[dgree pre sec] を示す。
 	float mRes = 0.15; // Sensitivity Scale Factor = 0.15
 	float zero_off;
 

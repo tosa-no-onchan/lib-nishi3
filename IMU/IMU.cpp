@@ -252,15 +252,31 @@ void cIMU::computeIMU( void ){
   #endif
 
   #if defined(USE_ACC_NISHI)
-    ax0 = (float)accData[0]*SEN.aRes;
-    ay0 = (float)accData[1]*SEN.aRes;
-    az0 = (float)accData[2]*SEN.aRes;
+    ax0 = (float)accData[0]*SEN.aRes; // [g]
+    ay0 = (float)accData[1]*SEN.aRes; // [g]
+    az0 = (float)accData[2]*SEN.aRes; // [g]
+
+    //SERIAL_PORT.print(F("ax0:"));
+    //SERIAL_PORT.print(ax0,6);
+    //SERIAL_PORT.print(F(" ay0:"));
+    //SERIAL_PORT.print(ay0,6);
+    //SERIAL_PORT.print(F(" az0:"));
+    //SERIAL_PORT.println(az0,6);
+
   #endif
 
   #if defined(USE_GRYO_NISHI)
-    gx0 = (float)gyroData[0]*SEN.gRes;
-    gy0 = (float)gyroData[1]*SEN.gRes;
-    gz0 = (float)gyroData[2]*SEN.gRes;
+    gx0 = (float)gyroData[0]*SEN.gRes;    // [dps]
+    gy0 = (float)gyroData[1]*SEN.gRes;    // [dps]
+    gz0 = (float)gyroData[2]*SEN.gRes;    // [dps]
+
+    //SERIAL_PORT.print(F("gx0:"));
+    //SERIAL_PORT.print(gx0,6);
+    //SERIAL_PORT.print(F(" gy0:"));
+    //SERIAL_PORT.print(gy0,6);
+    //SERIAL_PORT.print(F(" gz0:"));
+    //SERIAL_PORT.println(gz0,6);
+
   #endif
 
   #if defined(USE_MAG)
@@ -297,6 +313,13 @@ void cIMU::computeIMU( void ){
           fu_ac.axis.x = ax0;
           fu_ac.axis.y = ay0;
           fu_ac.axis.z = az0;
+
+          // Convert gyroscope degrees/sec to radians/sec
+          // 1.0/57.3 = 0.017452006980802792
+          //gx *= 0.0174533f;
+          //gy *= 0.0174533f;
+          //gz *= 0.0174533f;
+
           fu_gy.axis.x = gx0;
           fu_gy.axis.y = gy0;
           fu_gy.axis.z = gz0;
@@ -510,7 +533,6 @@ void cIMU::computeTF(unsigned long process_time){
   v_acc[1] += ay*s*SEN.aRes;
   v_acc[2] += az*s*SEN.aRes;
 
-
   // 調整5.
   // IMU を 3軸方向に、個別に、5[cm] ほど、動かして停止させる、移動テスト をします。
   // Arduino IDE Serial Plotter で、波形を観測して、
@@ -582,10 +604,9 @@ void cIMU::computeTF(unsigned long process_time){
   dlt[2]=cb.dt[2][0]*dist[0]+cb.dt[2][1]*dist[1]+cb.dt[2][2]*dist[2];
 
   // 基準座標系の距離を積分
-  tf_dlt[0] += dlt[0];   
-  tf_dlt[1] += dlt[1];
-  tf_dlt[2] += dlt[2]; 
-
+  tf_dlt[0] += dlt[0]*10.0;   
+  tf_dlt[1] += dlt[1]*10.0;
+  tf_dlt[2] += dlt[2]*10.0; 
 
   //#define KKKK5
   #ifdef KKKK5

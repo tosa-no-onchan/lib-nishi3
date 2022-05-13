@@ -19,9 +19,6 @@
 
 #include <SPI.h>
 
-// IMU.cpp で、
-// https://github.com/xioTechnologies/Fusion を使う時、使用
-//#define USE_XIO_FUSION
 
 // changed by nishi
 //#include "MPU6500.h"
@@ -106,10 +103,12 @@ public:
 
     const FusionAhrsSettings fu_settings = {
             //.gain = 0.5f,
-            //.gain = 0.004f,
-            .gain = 0.0f,
-            .accelerationRejection = 10.0f,
-            .magneticRejection = 20.0f,
+            //.gain = 0.01f,
+            .gain = 0.005f,
+            //.accelerationRejection = 10.0f,
+            .accelerationRejection = 20.0f,
+            //.magneticRejection = 20.0f,
+            .magneticRejection = 0.0f,
             //.rejectionTimeout = 5 * SAMPLE_RATE, /* 5 seconds */
             .rejectionTimeout = 5 * 686, /* 5 seconds */
             //.rejectionTimeout = 0, /* 5 seconds */
