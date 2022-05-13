@@ -320,9 +320,13 @@ void cIMU::computeIMU( void ){
           //gy *= 0.0174533f;
           //gz *= 0.0174533f;
 
-          fu_gy.axis.x = gx0;
-          fu_gy.axis.y = gy0;
-          fu_gy.axis.z = gz0;
+          //fu_gy.axis.x = gx0;
+          //fu_gy.axis.y = gy0;
+          //fu_gy.axis.z = gz0;
+
+          fu_gy.axis.x = gx0*0.0174533f;
+          fu_gy.axis.y = gy0*0.0174533f;
+          fu_gy.axis.z = gz0*0.0174533f;
 
           FusionAhrsUpdateNoMagnetometer(&filter, fu_gy, fu_ac, (float)process_time/1000000.0f);
           // filter.quaternion  此処に、 クォータニオンがある。
@@ -362,14 +366,14 @@ void cIMU::computeIMU( void ){
 
     //#define TEST_NISHI_5_D
     #ifdef TEST_NISHI_5_D
-      SERIAL_PORT.print(F("Q0:"));
-      SERIAL_PORT.print(filter.q0, 4);
-      SERIAL_PORT.print(F(" Q1:"));
-      SERIAL_PORT.print(filter.q1, 4);
-      SERIAL_PORT.print(F(" Q2:"));
-      SERIAL_PORT.print(filter.q2, 4);
-      SERIAL_PORT.print(F(" Q3:"));
-      SERIAL_PORT.println(filter.q3, 4);
+      SERIAL_PORT.print(F("quat_tmp[0]:"));
+      SERIAL_PORT.print(quat_tmp[0], 8);
+      SERIAL_PORT.print(F(" quat_tmp[1]:"));
+      SERIAL_PORT.print(quat_tmp[1], 8);
+      SERIAL_PORT.print(F(" quat_tmp[2]:"));
+      SERIAL_PORT.print(quat_tmp[2], 8);
+      SERIAL_PORT.print(F(" quat_tmp[3]:"));
+      SERIAL_PORT.println(quat_tmp[4], 8);
     #endif
 
     //filter.getQuaternion(&quat[0], &quat[1], &quat[2], &quat[3]);
@@ -576,7 +580,7 @@ void cIMU::computeTF(unsigned long process_time){
   // 調整6.
   // IMU を 3軸方向に、個別に、色々、動かして停止させる、移動テスト をします。
   // Rviz 上の tf-base-footprint が暴走しないか、確認します。
-  // 暴走するようであれば、VX_MAX_CUT_OFF、VY_MAX_CUT_OFF、VZ_MAX_CUT_OFF を調整するか、
+  // もし、暴走するようであれば、VX_MAX_CUT_OFF、VY_MAX_CUT_OFF、VZ_MAX_CUT_OFF を増やすか、
   // 今までのアルゴリズムを見直す必要があります。
   // 注) VX_MAX_CUT_OFF、VY_MAX_CUT_OFF、VZ_MAX_CUT_OFF を大きくしすぎると、定速で移動している場合を、
   // 含んでしまうので、要注意です。

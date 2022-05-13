@@ -95,9 +95,12 @@
 	#define VZ_CUT_OFF 0.08
 	//#define VZ_CUT_OFF 0.1
 
-	#define VX_MAX_CUT_OFF 0.35
-	#define VY_MAX_CUT_OFF 0.35
-	#define VZ_MAX_CUT_OFF 0.35
+	//#define VX_MAX_CUT_OFF 0.35
+	#define VX_MAX_CUT_OFF 0.01
+	//#define VY_MAX_CUT_OFF 0.35
+	#define VY_MAX_CUT_OFF 0.01
+	//#define VZ_MAX_CUT_OFF 0.35
+	#define VZ_MAX_CUT_OFF 0.01
 
 
 #elif defined(USE_ACC_4G)
