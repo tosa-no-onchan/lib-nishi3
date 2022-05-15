@@ -9,10 +9,9 @@
 #include <Arduino.h>
 #include "Define.h"
 
-
 // IMU.cpp で、
-// https://github.com/xioTechnologies/Fusion を使う時、使用
-//#define USE_XIO_FUSION
+// Complementary filter を使う時、使用
+//#define USE_COMPLE_FUSION
 
 //#include "use_def.h"
 // add by nishi
@@ -51,17 +50,18 @@
 
 #if defined(USE_ACC_2G)
 	#define ACC_1G 16384.0
-	#define ACC_ZERO_OFF 	5.0		// + で上へ行く。 - で下に行く
-	#if !defined(USE_XIO_FUSION)
+	#if defined(USE_COMPLE_FUSION)
+		#define ACC_ZERO_OFF 	-5.0 * 8.0		// + で上へ行く。 - で下に行く
 		#define ACC_X_CUT_OFF 35.0    // 2G  with Low pass filter  ICM20948_ACCEL_BW_6HZ
 		#define ACC_Y_CUT_OFF 35.0    // 
 		#define ACC_Z_CUT_OFF_P 35.0  // 
 		#define ACC_Z_CUT_OFF_M -35.0 // 
 	#else
-		#define ACC_X_CUT_OFF 100.0    // 2G  with Low pass filter  ICM20948_ACCEL_BW_6HZ
-		#define ACC_Y_CUT_OFF 240.0    // 
-		#define ACC_Z_CUT_OFF_P 80.0  // 
-		#define ACC_Z_CUT_OFF_M -80.0 // 
+		#define ACC_ZERO_OFF 	5.0		// + で上へ行く。 - で下に行く
+		#define ACC_X_CUT_OFF 35.0    // 2G  with Low pass filter  ICM20948_ACCEL_BW_6HZ
+		#define ACC_Y_CUT_OFF 35.0    // 
+		#define ACC_Z_CUT_OFF_P 35.0  // 
+		#define ACC_Z_CUT_OFF_M -35.0 // 
 	#endif
 
     //#define ACC_X_CUT_OFF 300.0    // 2G  without Low pass filter
@@ -78,29 +78,21 @@
 
 	// 速度
 	// 普通にIMU を振って、 0.1 位
+	// 低速域の速度を Cut Off
+	#define VX_CUT_OFF 0.01
+	#define VY_CUT_OFF 0.01
+	#define VZ_CUT_OFF 0.01
 
-	// 速度を Cut Off
-	//#define VX_CUT_OFF 0.3
-	//#define VX_CUT_OFF 0.25
-	#define VX_CUT_OFF 0.08
-	//#define VX_CUT_OFF 0.1
-
-	//#define VY_CUT_OFF 0.3
-	//#define VY_CUT_OFF 0.25
-	#define VY_CUT_OFF 0.08
-	//#define VY_CUT_OFF 0.1
-
-	//#define VZ_CUT_OFF 0.3
-	//#define VZ_CUT_OFF 0.25
-	#define VZ_CUT_OFF 0.08
-	//#define VZ_CUT_OFF 0.1
-
+	// 高速域の速度を Cut Off
 	//#define VX_MAX_CUT_OFF 0.35
-	#define VX_MAX_CUT_OFF 0.01
+	//#define VX_MAX_CUT_OFF 0.1
+	#define VX_MAX_CUT_OFF 0.08
 	//#define VY_MAX_CUT_OFF 0.35
-	#define VY_MAX_CUT_OFF 0.01
+	//#define VY_MAX_CUT_OFF 0.1
+	#define VY_MAX_CUT_OFF 0.08
 	//#define VZ_MAX_CUT_OFF 0.35
-	#define VZ_MAX_CUT_OFF 0.01
+	//#define VZ_MAX_CUT_OFF 0.1
+	#define VZ_MAX_CUT_OFF 0.08
 
 
 #elif defined(USE_ACC_4G)

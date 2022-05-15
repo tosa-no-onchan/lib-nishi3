@@ -75,10 +75,8 @@ uint8_t cIMU::begin( uint32_t hz ){
   }
   
   if( bConnected == true ){
-    #if defined(USE_XIO_FUSION)
-      //FusionOffsetInitialise(&offset, SAMPLE_RATE);
-      FusionAhrsInitialise(&filter);
-      FusionAhrsSetSettings(&filter, &fu_settings);
+    #if defined(USE_COMPLE_FUSION)
+      ahrs_fusion_init();
     #else
       filter.begin(update_hz);
       //filter.begin();
@@ -309,27 +307,8 @@ void cIMU::computeIMU( void ){
   #ifdef USE_MADWICK
     #ifdef IMU_SENSER6
       if (SEN.calibratingG_f != 0 && SEN.calibratingA_f != 0){
-        #if defined(USE_XIO_FUSION)
-          fu_ac.axis.x = ax0;
-          fu_ac.axis.y = ay0;
-          fu_ac.axis.z = az0;
-
-          // Convert gyroscope degrees/sec to radians/sec
-          // 1.0/57.3 = 0.017452006980802792
-          //gx *= 0.0174533f;
-          //gy *= 0.0174533f;
-          //gz *= 0.0174533f;
-
-          //fu_gy.axis.x = gx0;
-          //fu_gy.axis.y = gy0;
-          //fu_gy.axis.z = gz0;
-
-          fu_gy.axis.x = gx0*0.0174533f;
-          fu_gy.axis.y = gy0*0.0174533f;
-          fu_gy.axis.z = gz0*0.0174533f;
-
-          FusionAhrsUpdateNoMagnetometer(&filter, fu_gy, fu_ac, (float)process_time/1000000.0f);
-          // filter.quaternion  此処に、 クォータニオンがある。
+        #if defined(USE_COMPLE_FUSION)
+          ahrs_fusion_ag(gx0, gy0, gz0, ax0, ay0, az0, &ahrs, (float)process_time/1000000.0f);
         #else
           filter.invSampleFreq = (float)process_time/1000000.0f;
           filter.updateIMU(gx0, gy0, gz0, ax0, ay0, az0);
@@ -348,11 +327,17 @@ void cIMU::computeIMU( void ){
       }
     #endif
 
-    #if defined(USE_XIO_FUSION)
-      quat_tmp[0] = filter.quaternion.element.w;  // W
-      quat_tmp[1] = filter.quaternion.element.x;  // X
-      quat_tmp[2] = filter.quaternion.element.y;  // Y
-      quat_tmp[3] = filter.quaternion.element.z;  // Z
+    #if defined(USE_COMPLE_FUSION)
+      //ahrs->q.q0 = q0;
+      //ahrs->q.q1 = q1;
+      //ahrs->q.q2 = q2;
+      //ahrs->q.q3 = q3;
+
+      quat_tmp[0] = ahrs.q.q0;  // W
+      quat_tmp[1] = ahrs.q.q1;  // X
+      quat_tmp[2] = ahrs.q.q2;  // Y
+      quat_tmp[3] = ahrs.q.q3;  // Z
+
     #else
       rpy[0] = filter.getRoll();
       rpy[1] = filter.getPitch();
@@ -457,9 +442,9 @@ void cIMU::computeIMU( void ){
     if(az != 0)
       v_acc_z[2] +=1;
     
-    v_acc_z[0] &= 0x00ff;
-    v_acc_z[1] &= 0x00ff;
-    v_acc_z[2] &= 0x00ff;
+    //v_acc_z[0] &= 0x00ff;
+    //v_acc_z[1] &= 0x00ff;
+    //v_acc_z[2] &= 0x00ff;
 
     // 調整4.
     // こでは、 Acc の 1G 時の CUT OFF を決めます。
@@ -559,21 +544,49 @@ void cIMU::computeTF(unsigned long process_time){
   //#define VY_CUT_OFF 0.4
   //#define VZ_CUT_OFF 0.4
 
-  // now and passed 7 acc are all 0?
-  // 今回+過去の 8この 速度が同じで、一定速以下の場合、速度をクリアします。
-  if(fabsf(v_acc[0]) <= VX_MAX_CUT_OFF && v_acc_z[0] == 0){
+  // 加速度=0 の時の暴走の対応
+  // 低速域で、一定時間、x速度が常に同じだと、速度をクリアします。
+  if(fabsf(v_acc[0]) <= VX_CUT_OFF){
+    if ((v_acc_z[0] & 0x00ff) == 0){
+      // 通り過ぎた分だけ戻す
+      dist[0] -= v_acc[0]*s*7.0;
+      v_acc[0]=0.0;
+    }
+  }
+  // 高速域で、一定時間、x速度が常に同じだと、速度をクリアします。
+  else if(fabsf(v_acc[0]) <= VX_MAX_CUT_OFF && v_acc_z[0] == 0){
     // 通り過ぎた分だけ戻す
-    dist[0] -= v_acc[0]*s*7.0;
+    dist[0] -= v_acc[0]*s*15.0;
     v_acc[0]=0.0;
   }
-  if(fabsf(v_acc[1]) <= VY_MAX_CUT_OFF && v_acc_z[1] == 0){
+
+  // 低速域で、一定時間、y速度が常に同じだと、速度をクリアします。
+  if(fabsf(v_acc[1]) <= VY_CUT_OFF){
+    if ((v_acc_z[1] & 0x00ff) == 0){
+      // 通り過ぎた分だけ戻す
+      dist[1] -= v_acc[1]*s*7.0;
+      v_acc[1]=0.0;
+    }
+  }
+  // 高速域で、一定時間、y速度が常に同じだと、速度をクリアします。
+  else if(fabsf(v_acc[1]) <= VY_MAX_CUT_OFF && v_acc_z[1] == 0){
     // 通り過ぎた分だけ戻す
-    dist[1] -= v_acc[1]*s*7.0;
+    dist[1] -= v_acc[1]*s*15.0;
     v_acc[1]=0.0;
   }
-  if(fabsf(v_acc[2]) <= VZ_MAX_CUT_OFF && v_acc_z[2] == 0){
+
+  // 低速域で、一定時間、z速度が常に同じだと、速度をクリアします。
+  if(fabsf(v_acc[2]) <= VZ_CUT_OFF){
+    if((v_acc_z[2] & 0x00ff) == 0){
+      // 通り過ぎた分だけ戻す
+      dist[2] -= v_acc[2]*s*7.0;
+      v_acc[2]=0.0;
+    }
+  }
+  // 高速域で、一定時間、z速度が常に同じだと、速度をクリアします。
+  else if(fabsf(v_acc[2]) <= VZ_MAX_CUT_OFF && v_acc_z[2] == 0){
     // 通り過ぎた分だけ戻す
-    dist[2] -= v_acc[2]*s*7.0;
+    dist[2] -= v_acc[2]*s*15.0;
     v_acc[2]=0.0;
   }
 

@@ -37,12 +37,11 @@
 // そうすると、SparkFun_LSM9DS1_Arduino_Library/src/SparkFunLSM9DS1.cpp がビルドされて、ライブラリーが作成されて、
 // コンパイルが出来ます。
 
-#if defined(USE_XIO_FUSION)
-  #include <Fusion/Fusion.h>
+#if defined(USE_COMPLE_FUSION)
+  #include <fw_ahrs.h>
 #else
   #include "MadgwickAHRS.h"
 #endif
-
 
 // changed by nishi
 //#include "imu_selector.h"
@@ -99,26 +98,6 @@ public:
 
   float adjust[3];
 
-  #if defined(USE_XIO_FUSION)
-
-    const FusionAhrsSettings fu_settings = {
-            //.gain = 0.5f,
-            //.gain = 0.01f,
-            .gain = 0.005f,
-            //.accelerationRejection = 10.0f,
-            .accelerationRejection = 20.0f,
-            //.magneticRejection = 20.0f,
-            .magneticRejection = 0.0f,
-            //.rejectionTimeout = 5 * SAMPLE_RATE, /* 5 seconds */
-            .rejectionTimeout = 5 * 686, /* 5 seconds */
-            //.rejectionTimeout = 0, /* 5 seconds */
-    };
-
-    FusionVector fu_ac;
-    FusionVector fu_gy;
-  #endif
-
-
   CB cb;
 
 public:
@@ -132,8 +111,8 @@ public:
 
 private:
 
-  #if defined(USE_XIO_FUSION)
-    FusionAhrs filter;
+  #if defined(USE_COMPLE_FUSION)
+    AHRS_State_TypeDef ahrs;
   #else
     Madgwick filter;
   #endif
