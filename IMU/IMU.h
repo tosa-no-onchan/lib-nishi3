@@ -72,6 +72,7 @@ public:
   float   rpy[3];
   float   quat[4];
   float   quat_tmp[4];
+  float   quat_tmp_prev[4];
   double  quat_dmp[4];  // add by nishi
   int16_t gyroData[3];
   int16_t gyroRaw[3];
@@ -92,6 +93,7 @@ public:
 
   float tf_dlt[3];
   float v_acc[3];
+  //float v_acc_2[3];
   uint16_t v_acc_z[3];
 
   int16_t cali_tf;    // Madgwick Caliburation count

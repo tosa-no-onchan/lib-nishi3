@@ -63,6 +63,12 @@ uint8_t cIMU::begin( uint32_t hz ){
   quat[2]=0.0;
   quat[3]=0.0;
 
+  quat_tmp_prev[0]=1.0;
+  quat_tmp_prev[1]=0.0;
+  quat_tmp_prev[2]=0.0;
+  quat_tmp_prev[3]=0.0;
+
+
   cali_tf=0;    // Madgwick Caliburation
 
  	digitalWrite(LED_BUILTIN, LOW);		// light OFF
@@ -379,7 +385,17 @@ void cIMU::computeIMU( void ){
 
   #ifdef USE_IMU_DIST
     // Cumpute CB 
-    compCB(quat_tmp,&cb);
+    //compCB(quat_tmp,&cb);
+
+    // 1つ前のとの 4:6 のクォータニオンをつかいます。
+    quat_tmp_prev[1] = (quat_tmp[1]*0.3 + quat_tmp_prev[1]*0.7);
+    quat_tmp_prev[2] = (quat_tmp[2]*0.3 + quat_tmp_prev[2]*0.7);
+    quat_tmp_prev[3] = (quat_tmp[3]*0.3 + quat_tmp_prev[3]*0.7);
+
+    //q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));    //  -- W
+    quat_tmp_prev[0] = sqrt(1.0 - ((quat_tmp_prev[1] * quat_tmp_prev[1]) + (quat_tmp_prev[2] * quat_tmp_prev[2]) + (quat_tmp_prev[3] * quat_tmp_prev[3])));
+
+    compCB(quat_tmp_prev,&cb);
 
     double acc_Zero[3];
 
@@ -400,6 +416,12 @@ void cIMU::computeIMU( void ){
     //ay = (double)accData[1] - acc_Zero[0];
     az = (double)accData[2] - acc_Zero[2];
 
+    quat_tmp_prev[0]=quat_tmp[0];
+    quat_tmp_prev[1]=quat_tmp[1];
+    quat_tmp_prev[2]=quat_tmp[2];
+    quat_tmp_prev[3]=quat_tmp[3];
+
+    compCB(quat_tmp,&cb);
 
     // 調整2.
     // こでは、 Acc の 1G キャンセルのバイアス値をチェックします。
@@ -522,6 +544,7 @@ void cIMU::computeTF(unsigned long process_time){
   v_acc[1] += ay*s*SEN.aRes;
   v_acc[2] += az*s*SEN.aRes;
 
+
   // 調整5.
   // IMU を 3軸方向に、個別に、5[cm] ほど、動かして停止させる、移動テスト をします。
   // Arduino IDE Serial Plotter で、波形を観測して、
@@ -581,7 +604,7 @@ void cIMU::computeTF(unsigned long process_time){
       // 通り過ぎた分だけ戻す
       dist[2] -= v_acc[2]*s*7.0;
       v_acc[2]=0.0;
-    }
+   }
   }
   // 高速域で、一定時間、z速度が常に同じだと、速度をクリアします。
   else if(fabsf(v_acc[2]) <= VZ_MAX_CUT_OFF && v_acc_z[2] == 0){
