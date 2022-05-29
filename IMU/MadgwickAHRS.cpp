@@ -32,7 +32,6 @@
 // test by nishi 2022.1.8
 //#define betaDef         0.01f            // 2 * proportional gain
 #define betaDef         0.005f            // 2 * proportional gain 2022.5.11 test OK
-//#define betaDef         0.004f            // 2 * proportional gain
 
 
 //============================================================================================
@@ -42,7 +41,7 @@
 // AHRS algorithm update
 
 Madgwick::Madgwick() {
-	beta = betaDef;
+	_beta = betaDef;
 	q0 = 1.0f;
 	q1 = 0.0f;
 	q2 = 0.0f;
@@ -132,10 +131,10 @@ void Madgwick::update(float gx, float gy, float gz, float ax, float ay, float az
 		s3 *= recipNorm;
 
 		// Apply feedback step
-		qDot1 -= beta * s0;
-		qDot2 -= beta * s1;
-		qDot3 -= beta * s2;
-		qDot4 -= beta * s3;
+		qDot1 -= _beta * s0;
+		qDot2 -= _beta * s1;
+		qDot3 -= _beta * s2;
+		qDot4 -= _beta * s3;
 	}
 
 	// Integrate rate of change of quaternion to yield quaternion
@@ -221,10 +220,10 @@ void Madgwick::updateIMU(float gx, float gy, float gz, float ax, float ay, float
 		s3 *= recipNorm;
 
 		// Apply feedback step
-		qDot1 -= beta * s0;
-		qDot2 -= beta * s1;
-		qDot3 -= beta * s2;
-		qDot4 -= beta * s3;
+		qDot1 -= _beta * s0;
+		qDot2 -= _beta * s1;
+		qDot3 -= _beta * s2;
+		qDot4 -= _beta * s3;
 	}
 
 	// Integrate rate of change of quaternion to yield quaternion

@@ -81,29 +81,33 @@ uint8_t cIMU::begin( uint32_t hz ){
   }
   
   if( bConnected == true ){
-    #if defined(USE_COMPLE_FUSION)
-      ahrs_fusion_init();
-    #else
-      filter.begin(update_hz);
-      //filter.begin();
+    #if defined(USE_MADWICK)
+      #if defined(USE_FOXBOT)
+        filter.begin(update_hz,0.01f);
+      #else
+        filter.begin(update_hz,0.005f);
+      #endif
+    //filter.begin();
     #endif
 
     pre_time = millis();
 
-   	#ifdef USE_DMP_NISHI
-    while(!SEN.dmp_cali_get_done()){
-      update();
-      if (millis()-pre_time > 5000){
-        break;
-      }
-    }
+   	#if defined(USE_DMP_NISHI)
+      while(!SEN.dmp_cali_get_done()){
+        update();
+        if (millis()-pre_time > 5000){
+          break;
+        }
+        delayMicroseconds(1000);
+     }
     #else
-    while(!SEN.gyro_cali_get_done()){
-      update();
-      if (millis()-pre_time > 5000){
-        break;
+      while(!SEN.gyro_cali_get_done()){
+        update();
+        if (millis()-pre_time > 5000){
+          break;
+        }
+        delayMicroseconds(1000);
       }
-    }
     #endif
   }
   else{
@@ -124,9 +128,7 @@ uint16_t cIMU::update( uint32_t option ){
   //UNUSED(option);
 
 	uint16_t ret_time = 0;
-
-	computeIMU();
-
+ 	computeIMU();
 	return ret_time;
 }
 
@@ -310,15 +312,11 @@ void cIMU::computeIMU( void ){
   process_time      = cur_process_time-prev_process_time;
   prev_process_time = cur_process_time;
 
-  #ifdef USE_MADWICK
-    #ifdef IMU_SENSER6
+  #if defined(USE_MADWICK)
+    #if defined(IMU_SENSER6)
       if (SEN.calibratingG_f != 0 && SEN.calibratingA_f != 0){
-        #if defined(USE_COMPLE_FUSION)
-          ahrs_fusion_ag(gx0, gy0, gz0, ax0, ay0, az0, &ahrs, (float)process_time/1000000.0f);
-        #else
-          filter.invSampleFreq = (float)process_time/1000000.0f;
-          filter.updateIMU(gx0, gy0, gz0, ax0, ay0, az0);
-        #endif
+        filter.invSampleFreq = (float)process_time/1000000.0f;
+        filter.updateIMU(gx0, gy0, gz0, ax0, ay0, az0);
       }
       else{
         return;
@@ -333,27 +331,14 @@ void cIMU::computeIMU( void ){
       }
     #endif
 
-    #if defined(USE_COMPLE_FUSION)
-      //ahrs->q.q0 = q0;
-      //ahrs->q.q1 = q1;
-      //ahrs->q.q2 = q2;
-      //ahrs->q.q3 = q3;
+    rpy[0] = filter.getRoll();
+    rpy[1] = filter.getPitch();
+    rpy[2] = filter.getYaw()-180.;
 
-      quat_tmp[0] = ahrs.q.q0;  // W
-      quat_tmp[1] = ahrs.q.q1;  // X
-      quat_tmp[2] = ahrs.q.q2;  // Y
-      quat_tmp[3] = ahrs.q.q3;  // Z
-
-    #else
-      rpy[0] = filter.getRoll();
-      rpy[1] = filter.getPitch();
-      rpy[2] = filter.getYaw()-180.;
-
-      quat_tmp[0] = filter.q0;  // W
-      quat_tmp[1] = filter.q1;  // X
-      quat_tmp[2] = filter.q2;  // Y
-      quat_tmp[3] = filter.q3;  // Z
-    #endif
+    quat_tmp[0] = filter.q0;  // W
+    quat_tmp[1] = filter.q1;  // X
+    quat_tmp[2] = filter.q2;  // Y
+    quat_tmp[3] = filter.q3;  // Z
 
     //#define TEST_NISHI_5_D
     #ifdef TEST_NISHI_5_D
@@ -374,7 +359,7 @@ void cIMU::computeIMU( void ){
     angle[2] = (int16_t)(rpy[1] * 1.);
   #endif
 
-  #ifdef USE_DMP_NISHI
+  #if defined(USE_DMP_NISHI)
     // use ICM20948 DMP Fusion.  add by nishi 2021.11.6
     quat[0] = SEN.quat[0];  // W
     quat[1] = SEN.quat[1];  // X
@@ -383,7 +368,7 @@ void cIMU::computeIMU( void ){
   #endif
 
 
-  #ifdef USE_IMU_DIST
+  #if defined(USE_IMU_DIST)
     // Cumpute CB 
     //compCB(quat_tmp,&cb);
 
@@ -510,11 +495,16 @@ void cIMU::computeIMU( void ){
     else{
       cali_tf ++;
     }
-  #else
-    quat[0] = filter.q0;  // W
-    quat[1] = filter.q1;  // X
-    quat[2] = filter.q2;  // Y
-    quat[3] = filter.q3;  // Z
+  #elif defined(USE_MADWICK)
+    if(cali_tf >= 7000){
+      quat[0] = filter.q0;  // W
+      quat[1] = filter.q1;  // X
+      quat[2] = filter.q2;  // Y
+      quat[3] = filter.q3;  // Z
+    }
+    else{
+      cali_tf ++;
+    }
   #endif
 
 }
@@ -658,11 +648,58 @@ void cIMU::computeTF(unsigned long process_time){
 
 }
 
+void cIMU::QuaternionToEulerAngles(double q0, double q1, double q2, double q3,
+                             double& roll, double& pitch, double& yaw)
+{
+    double q0q0 = q0 * q0;
+    double q0q1 = q0 * q1;
+    double q0q2 = q0 * q2;
+    double q0q3 = q0 * q3;
+    double q1q1 = q1 * q1;
+    double q1q2 = q1 * q2;
+    double q1q3 = q1 * q3;
+    double q2q2 = q2 * q2;
+    double q2q3 = q2 * q3;
+    double q3q3 = q3 * q3;
+    roll = atan2(2.0 * (q2q3 + q0q1), q0q0 - q1q1 - q2q2 + q3q3);
+    pitch = asin(2.0 * (q0q2 - q1q3));
+    yaw = atan2(2.0 * (q1q2 + q0q3), q0q0 + q1q1 - q2q2 - q3q3);
+}
+
 /*
 * compCB()
 * クォータニオンを回転行列に変換する。
 */
 void cIMU::compCB(float q[4],CB *cb){
+
+    double q0q0 = q[0] * q[0];
+    double q0q1 = q[0] * q[1];
+    double q0q2 = q[0] * q[2];
+    double q0q3 = q[0] * q[3];
+    double q1q1 = q[1] * q[1];
+    double q1q2 = q[1] * q[2];
+    double q1q3 = q[1] * q[3];
+    double q2q2 = q[2] * q[2];
+    double q2q3 = q[2] * q[3];
+    double q3q3 = q[3] * q[3];
+
+    //double CB[3][3];
+    cb->dt[0][0] = q0q0+q1q1-q2q2-q3q3;
+    cb->dt[0][1] = 2.0*(q1q2-q0q3);
+    cb->dt[0][2] = 2.0*(q1q3+q0q2);
+    cb->dt[1][0] = 2.0*(q1q2+q0q3);
+    cb->dt[1][1] = q0q0-q1q1+q2q2-q3q3;
+    cb->dt[1][2] = 2.0*(q2q3-q0q1);
+    cb->dt[2][0] = 2.0*(q1q3-q0q2);
+    cb->dt[2][1] = 2.0*(q2q3+q0q1);
+    cb->dt[2][2] = q0q0-q1q1-q2q2+q3q3;
+}
+
+/*
+* compCB()
+* クォータニオンを回転行列に変換する。
+*/
+void cIMU::compCBd(double q[4],CB *cb){
 
     double q0q0 = q[0] * q[0];
     double q0q1 = q[0] * q[1];

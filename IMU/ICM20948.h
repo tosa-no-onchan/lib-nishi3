@@ -9,26 +9,51 @@
 #include <Arduino.h>
 #include "Define.h"
 
-// IMU.cpp で、
-// Complementary filter を使う時、使用
-//#define USE_COMPLE_FUSION
 
-//#include "use_def.h"
-// add by nishi
 #define ICM20948_IMU
-//#define USE_SPARK_LIB
-#define USE_ACC_NISHI
-#define USE_GRYO_NISHI
-//#define USE_DMP_NISHI
-#define USE_MADWICK
 
-// add by nishi 2021.10.7
-#define IMU_SENSER6
-//#define USE_MAG
+// foxboot_core3.ino 用にビルド時は、
+// platformio.ini
+// -D USE_FOXBOT
+// 又は 
+// #define USE_FOXBOT
 
-#define USE_ACC_2G
-//#define USE_ACC_4G
-//#define USE_ACC_8G
+//#define USE_FOXBOT
+
+// for fooxbot_core3.ino
+#if defined(USE_FOXBOT)
+	// add by nishi
+	#define USE_SPARK_LIB
+	//#define USE_ACC_NISHI
+	//#define USE_GRYO_NISHI
+	#define USE_DMP_NISHI
+	//#define USE_MADWICK
+
+	// add by nishi 2021.10.7
+	#define IMU_SENSER6
+	//#define USE_MAG
+
+	#define USE_ACC_2G
+	//#define USE_ACC_4G
+	//#define USE_ACC_8G
+
+// for ReadIMU
+#else
+	// add by nishi
+	//#define USE_SPARK_LIB
+	#define USE_ACC_NISHI
+	#define USE_GRYO_NISHI
+	//#define USE_DMP_NISHI
+	#define USE_MADWICK
+
+	// add by nishi 2021.10.7
+	#define IMU_SENSER6
+	//#define USE_MAG
+
+	#define USE_ACC_2G
+	//#define USE_ACC_4G
+	//#define USE_ACC_8G
+#endif
 
 // Full-Scale Range
 //  ACCEL_FS=0  -> ±2 [G]
@@ -50,19 +75,11 @@
 
 #if defined(USE_ACC_2G)
 	#define ACC_1G 16384.0
-	#if defined(USE_COMPLE_FUSION)
-		#define ACC_ZERO_OFF 	-5.0 * 8.0		// + で上へ行く。 - で下に行く
-		#define ACC_X_CUT_OFF 35.0    // 2G  with Low pass filter  ICM20948_ACCEL_BW_6HZ
-		#define ACC_Y_CUT_OFF 35.0    // 
-		#define ACC_Z_CUT_OFF_P 35.0  // 
-		#define ACC_Z_CUT_OFF_M -35.0 // 
-	#else
-		#define ACC_ZERO_OFF 	5.0		// + で上へ行く。 - で下に行く
-		#define ACC_X_CUT_OFF 35.0    // 2G  with Low pass filter  ICM20948_ACCEL_BW_6HZ
-		#define ACC_Y_CUT_OFF 35.0    // 
-		#define ACC_Z_CUT_OFF_P 35.0  // 
-		#define ACC_Z_CUT_OFF_M -35.0 // 
-	#endif
+	#define ACC_ZERO_OFF 	5.0		// + で上へ行く。 - で下に行く
+	#define ACC_X_CUT_OFF 35.0    // 2G  with Low pass filter  ICM20948_ACCEL_BW_6HZ
+	#define ACC_Y_CUT_OFF 35.0    // 
+	#define ACC_Z_CUT_OFF_P 35.0  // 
+	#define ACC_Z_CUT_OFF_M -35.0 // 
 
     //#define ACC_X_CUT_OFF 300.0    // 2G  without Low pass filter
     //#define ACC_Y_CUT_OFF 300.0    // 

@@ -121,7 +121,7 @@ void read_regs( uint8_t addr, uint8_t reg, uint8_t *p_data, uint32_t length );
 class cMPU6500
 {
  public:
-  bool     bConnected;
+	bool     bConnected;
 
     int16_t  gyroADC[3];
     int16_t  gyroRAW[3];

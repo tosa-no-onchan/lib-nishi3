@@ -87,18 +87,18 @@ cICM20948::cICM20948()
 }
 
 
-#ifdef USE_SPARK_LIB
+#if defined(USE_SPARK_LIB)
 bool cICM20948::begin()
 {
   int cnt;
   uint8_t data;
+
   // test by nishi MOSI(23) Pull UP 2023.12.13
   //pinMode(23,INPUT_PULLUP);
   MPU_SPI.begin(18,19,23,5);
 
   // test by nishi MOSI(23) Pull UP 2023.12.13
   //pinMode(23,INPUT_PULLUP);
-
 
   bool initialized = false;
   cnt = 2;
@@ -141,7 +141,7 @@ bool cICM20948::begin()
       acc_init();
       mag_init();
       #ifdef USE_DMP_NISHI
-      dmp_init();
+        dmp_init();
       #endif
     }
     //MPU_SPI.setClockDivider( SPI_CLOCK_DIV4 ); // 6.5MHz
@@ -238,7 +238,7 @@ bool cICM20948::begin()
 }
 #endif
 
-#ifdef USE_SPARK_LIB
+#if defined(USE_SPARK_LIB)
 bool cICM20948::init( void ){
   uint8_t state;
   uint8_t data;
@@ -968,268 +968,265 @@ bool cICM20948::dmp_get_adc(){
     //SERIAL_PORT.println( data.header, HEX );
 
     #ifndef IMU_SENSER6
-    if ((data.header & DMP_header_bitmap_Quat9) > 0) // We have asked for orientation data so we should receive Quat9
-    {
+      // DMP 9 Fusion
+      if ((data.header & DMP_header_bitmap_Quat9) > 0) // We have asked for orientation data so we should receive Quat9
+      {
 
-      // Q0 value is computed from this equation: Q0^2 + Q1^2 + Q2^2 + Q3^2 = 1.
-      // In case of drift, the sum will not add to 1, therefore, quaternion data need to be corrected with right bias values.
-      // ドリフトする時は、合計が、 1 になっていないので 正しい bias values で、 quaternion data を補正しないといけない。
-      // The quaternion data is scaled by 2^30.
+        // Q0 value is computed from this equation: Q0^2 + Q1^2 + Q2^2 + Q3^2 = 1.
+        // In case of drift, the sum will not add to 1, therefore, quaternion data need to be corrected with right bias values.
+        // ドリフトする時は、合計が、 1 になっていないので 正しい bias values で、 quaternion data を補正しないといけない。
+        // The quaternion data is scaled by 2^30.
 
-      //SERIAL_PORT.printf("Quat9 data is: Q1:%ld Q2:%ld Q3:%ld Accuracy:%d\r\n", data.Quat9.Data.Q1, data.Quat9.Data.Q2, data.Quat9.Data.Q3, data.Quat9.Data.Accuracy);
+        //SERIAL_PORT.printf("Quat9 data is: Q1:%ld Q2:%ld Q3:%ld Accuracy:%d\r\n", data.Quat9.Data.Q1, data.Quat9.Data.Q2, data.Quat9.Data.Q3, data.Quat9.Data.Accuracy);
 
-      // Scale to +/- 1
-      double q1 = ((double)data.Quat9.Data.Q1) / 1073741824.0; // Convert to double. Divide by 2^30  -- X
-      double q2 = ((double)data.Quat9.Data.Q2) / 1073741824.0; // Convert to double. Divide by 2^30  -- Y
-      double q3 = ((double)data.Quat9.Data.Q3) / 1073741824.0; // Convert to double. Divide by 2^30  -- Z
+        // Scale to +/- 1
+        double q1 = ((double)data.Quat9.Data.Q1) / 1073741824.0; // Convert to double. Divide by 2^30  -- X
+        double q2 = ((double)data.Quat9.Data.Q2) / 1073741824.0; // Convert to double. Divide by 2^30  -- Y
+        double q3 = ((double)data.Quat9.Data.Q3) / 1073741824.0; // Convert to double. Divide by 2^30  -- Z
 
-      double q0;
-      int q0i,q1i,q2i,q3i;
+        double q0;
+        int q0i,q1i,q2i,q3i;
 
-      q1i =(int)round(q1*1000.0);
-      q1 = (double)q1i/ 1000.0;
+        q1i =(int)round(q1*1000.0);
+        q1 = (double)q1i/ 1000.0;
 
-      q2i =(int)round(q2*1000.0);
-      q2 = (double)q2i/ 1000.0;
+        q2i =(int)round(q2*1000.0);
+        q2 = (double)q2i/ 1000.0;
 
-      q3i =(int)round(q3*1000.0);
-      q3 = (double)q3i/ 1000.0;
+        q3i =(int)round(q3*1000.0);
+        q3 = (double)q3i/ 1000.0;
 
-      //double q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));    //  -- W 
+        //double q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));    //  -- W 
 
-      //double bias=-0.009;
-      //q1+=bias;
-      //q2+=bias;
-      //q3+=bias;
+        //double bias=-0.009;
+        //q1+=bias;
+        //q2+=bias;
+        //q3+=bias;
 
-      if(f==0){
-        q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));    //  -- W 
-        q0i =(int)round(q0*1000.0);
-        q[0] = (double)q0i/ 1000.0;
-        q[1]=q1;
-        q[2]=q2;
-        q[3]=q3;
-        f=1;
-      }
-      else{
-        //q[0] = q[0] - (q[1] - q1) - (q[2]-q2) - (q[3] - q3);
-        q0 = q[0] - (q[1] - q1) - (q[2]-q2) - (q[3] - q3);
-        q0i =(int)round(q0*1000.0);
-        q[0] = (double)q0i/ 1000.0;
+        if(f==0){
+          q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));    //  -- W 
+          q0i =(int)round(q0*1000.0);
+          q[0] = (double)q0i/ 1000.0;
+          q[1]=q1;
+          q[2]=q2;
+          q[3]=q3;
+          f=1;
+        }
+        else{
+          //q[0] = q[0] - (q[1] - q1) - (q[2]-q2) - (q[3] - q3);
+          q0 = q[0] - (q[1] - q1) - (q[2]-q2) - (q[3] - q3);
+          q0i =(int)round(q0*1000.0);
+          q[0] = (double)q0i/ 1000.0;
 
-        //q[0] = q[0] - (q[1] - q1) - (q[2]-q2) + (q[3] - q3);
-        //q[0] = q[0] - (q[1] - q1) + (q[2]-q2) - (q[3] - q3);
-        //q[0] = q[0] - (q[1] - q1) + (q[2]-q2) + (q[3] - q3);
-        //q[0] = q[0] + (q[1] - q1) - (q[2]-q2) - (q[3] - q3);
-        //q[0] = q[0] + (q[1] - q1) - (q[2]-q2) + (q[3] - q3);
-        //q[0] = q[0] + (q[1] - q1) + (q[2]-q2) - (q[3] - q3);
-        //q[0] = q[0] + (q[1] - q1) + (q[2]-q2) + (q[3] - q3);
-        //q0 = q0 + q1 -q2 + q3;
-        q[1]=q1;
-        q[2]=q2;
-        q[3]=q3;
-      }
+          //q[0] = q[0] - (q[1] - q1) - (q[2]-q2) + (q[3] - q3);
+          //q[0] = q[0] - (q[1] - q1) + (q[2]-q2) - (q[3] - q3);
+          //q[0] = q[0] - (q[1] - q1) + (q[2]-q2) + (q[3] - q3);
+          //q[0] = q[0] + (q[1] - q1) - (q[2]-q2) - (q[3] - q3);
+          //q[0] = q[0] + (q[1] - q1) - (q[2]-q2) + (q[3] - q3);
+          //q[0] = q[0] + (q[1] - q1) + (q[2]-q2) - (q[3] - q3);
+          //q[0] = q[0] + (q[1] - q1) + (q[2]-q2) + (q[3] - q3);
+          //q0 = q0 + q1 -q2 + q3;
+          q[1]=q1;
+          q[2]=q2;
+          q[3]=q3;
+        }
 
-      double recipNorm = invSqrt((q[0]*q[0])+ (q1 * q1) + (q2 * q2) + (q3 * q3));
-      q[0] *= recipNorm;
-      q1 *= recipNorm;
-      q2 *= recipNorm;
-      q3 *= recipNorm;
+        double recipNorm = invSqrt((q[0]*q[0])+ (q1 * q1) + (q2 * q2) + (q3 * q3));
+        q[0] *= recipNorm;
+        q1 *= recipNorm;
+        q2 *= recipNorm;
+        q3 *= recipNorm;
 
-      //double gmag = sqrt((q0*q0)+ (q1 * q1) + (q2 * q2) + (q3 * q3));
+        //double gmag = sqrt((q0*q0)+ (q1 * q1) + (q2 * q2) + (q3 * q3));
 
-      //if(fabs(gmag - 1.0) > 0.000001){
-      //  q0 /= gmag;
-      //  q1 /= gmag;
-      //  q2 /= gmag;
-      //  q3 /= gmag;
-      //}
-
-
-      //#define XTX1
-      #if defined(XTX1)
-      //double q0=1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3));
-      if(q0 >= 0.0) q0 = sqrt(q0);
-      else q0 = sqrt(q0 * -1.0) * -1.0;
-      #endif
- 
- 
-      #define TEST_W0_X
-      #ifdef TEST_W0_X
-      SERIAL_PORT.print(F("Q0:"));
-      SERIAL_PORT.print(q[0], 3);
-      SERIAL_PORT.print(F(" Q1:"));
-      SERIAL_PORT.print(q1, 3);
-      SERIAL_PORT.print(F(" Q2:"));
-      SERIAL_PORT.print(q2, 3);
-      SERIAL_PORT.print(F(" Q3:"));
-      SERIAL_PORT.print(q3, 3);
-      SERIAL_PORT.print(F(" Accuracy:"));
-      SERIAL_PORT.println(data.Quat9.Data.Accuracy);
-      #endif
-
-      if(!isnan(q[0])){
-                                            //   x x x x x
-        quatRAW[1] = data.Quat9.Data.Q1;    // 1 1 2 2 3 3
-        quatRAW[2] = data.Quat9.Data.Q2;    // 2 3 1 3 1 2
-        quatRAW[3] = data.Quat9.Data.Q3;    // 3 2 3 1 2 1
+        //if(fabs(gmag - 1.0) > 0.000001){
+        //  q0 /= gmag;
+        //  q1 /= gmag;
+        //  q2 /= gmag;
+        //  q3 /= gmag;
+        //}
 
 
-        #ifndef QUAT_ANIMATION
-        //SERIAL_PORT.print(F("Q1:"));
-        //SERIAL_PORT.print(quatRAW[1]);
-        //SERIAL_PORT.print(F(" Q2:"));
-        //SERIAL_PORT.print(quatRAW[2]);
-        //SERIAL_PORT.print(F(" Q3:"));
-        //SERIAL_PORT.println(quatRAW[3]);
-        //SERIAL_PORT.print(F(" Accuracy:"));
-        //SERIAL_PORT.println(data.Quat9.Data.Accuracy);
+        //#define XTX1
+        #if defined(XTX1)
+          //double q0=1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3));
+          if(q0 >= 0.0) q0 = sqrt(q0);
+          else q0 = sqrt(q0 * -1.0) * -1.0;
+        #endif
+  
+  
+        #define TEST_W0_X
+        #ifdef TEST_W0_X
+          SERIAL_PORT.print(F("Q0:"));
+          SERIAL_PORT.print(q[0], 3);
+          SERIAL_PORT.print(F(" Q1:"));
+          SERIAL_PORT.print(q1, 3);
+          SERIAL_PORT.print(F(" Q2:"));
+          SERIAL_PORT.print(q2, 3);
+          SERIAL_PORT.print(F(" Q3:"));
+          SERIAL_PORT.print(q3, 3);
+          SERIAL_PORT.print(F(" Accuracy:"));
+          SERIAL_PORT.println(data.Quat9.Data.Accuracy);
         #endif
 
-        if (calibratingD>0)
-        {
-          calibratingD--;
-          for (uint8_t axis = 1; axis < 4; axis++)
-          {
-            if (calibratingD ==(MPU_CALI_COUNT-1)){
-               d[axis]=0;  // Reset a[axis] at start of calibration
-            }
-            d[axis] += quatRAW[axis];
-            quatZero[axis] = d[axis]>>8;          // Calculate average, only the last itteration where (calibratingA == 0) is relevant
-          }
-          if (calibratingD == 0)
-          {
-            //accZero[YAW] -= ACC_1G;
-            //magZero[YAW] = 0;
+        if(!isnan(q[0])){
+                                              //   x x x x x
+          quatRAW[1] = data.Quat9.Data.Q1;    // 1 1 2 2 3 3
+          quatRAW[2] = data.Quat9.Data.Q2;    // 2 3 1 3 1 2
+          quatRAW[3] = data.Quat9.Data.Q3;    // 3 2 3 1 2 1
 
-            #ifndef QUAT_ANIMATION
-            SERIAL_PORT.print(F("Q1:"));
-            SERIAL_PORT.print(quatRAW[1]);
-            SERIAL_PORT.print(F(" Q2:"));
-            SERIAL_PORT.print(quatRAW[2]);
-            SERIAL_PORT.print(F(" Q3:"));
-            SERIAL_PORT.println(quatRAW[3]);
 
-            SERIAL_PORT.print(F("QZ1:"));
-            SERIAL_PORT.print(quatZero[1]);
-            SERIAL_PORT.print(F(" QZ2:"));
-            SERIAL_PORT.print(quatZero[2]);
-            SERIAL_PORT.print(F(" QZ3:"));
-            SERIAL_PORT.println(quatZero[3]);
+          #ifndef QUAT_ANIMATION
+            //SERIAL_PORT.print(F("Q1:"));
+            //SERIAL_PORT.print(quatRAW[1]);
+            //SERIAL_PORT.print(F(" Q2:"));
+            //SERIAL_PORT.print(quatRAW[2]);
+            //SERIAL_PORT.print(F(" Q3:"));
+            //SERIAL_PORT.println(quatRAW[3]);
             //SERIAL_PORT.print(F(" Accuracy:"));
             //SERIAL_PORT.println(data.Quat9.Data.Accuracy);
-            #endif
-          }
+          #endif
 
-
-        }
-
-        //quat[1] = ((double)(quatRAW[1] - quatZero[1])) / 1073741824.0; // Convert to double. Divide by 2^30  -- X
-        //quat[2] = ((double)(quatRAW[2] - quatZero[2])) / 1073741824.0; // Convert to double. Divide by 2^30  -- Y
-        //quat[3] = ((double)(quatRAW[3] - quatZero[3])) / 1073741824.0; // Convert to double. Divide by 2^30  -- Z
-        //quat[0] = sqrt(1.0 - ((quat[1] * quat[1]) + (quat[2] * quat[2]) + (quat[3] * quat[3])));    //  -- W
-
-        quat[0] = q[0];
-        quat[1] = q1;
-        quat[2] = q2;
-        quat[3] = q3;
-
-        rc=true;
-
-        #ifndef QUAT_ANIMATION
-        //SERIAL_PORT.print(F("Q1:"));
-        //SERIAL_PORT.print(q1, 3);
-        //SERIAL_PORT.print(F(" Q2:"));
-        //SERIAL_PORT.print(q2, 3);
-        //SERIAL_PORT.print(F(" Q3:"));
-        //SERIAL_PORT.print(q3, 3);
-        //SERIAL_PORT.print(F(" Accuracy:"));
-        //SERIAL_PORT.println(data.Quat9.Data.Accuracy);
-        #else
-        // Output the Quaternion data in the format expected by ZaneL's Node.js Quaternion animation tool
-        SERIAL_PORT.print(F("{\"quat_w\":"));
-        SERIAL_PORT.print(q0, 3);
-        SERIAL_PORT.print(F(", \"quat_x\":"));
-        SERIAL_PORT.print(q1, 3);
-        SERIAL_PORT.print(F(", \"quat_y\":"));
-        SERIAL_PORT.print(q2, 3);
-        SERIAL_PORT.print(F(", \"quat_z\":"));
-        SERIAL_PORT.print(q3, 3);
-        SERIAL_PORT.println(F("}"));
-        #endif
-      }
-    }
-    #else
-    if((data.header & DMP_header_bitmap_Quat6) > 0){
-      double q1 = ((double)data.Quat6.Data.Q1) / 1073741824.0; // Convert to double. Divide by 2^30  -- X
-      double q2 = ((double)data.Quat6.Data.Q2) / 1073741824.0; // Convert to double. Divide by 2^30  -- Y
-      double q3 = ((double)data.Quat6.Data.Q3) / 1073741824.0; // Convert to double. Divide by 2^30  -- Z
-      //double q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));    //  -- W    こいつが、バグとの事。
-
-      double q0=1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3));
-      if(q0 >= 0.0) q0 = sqrt(q0);
-      else q0 = sqrt(q0 * -1.0) * -1.0;
-
-      if(!isnan(q0)){
-        if(calibratingD_f == 0){
-          calibratingD++;
-          if(calibratingD >= 200){
-            if(calibratingD == 200){
-              //d[1]=data.Quat6.Data.Q1;
-              //d[2]=data.Quat6.Data.Q2;
-              //d[3]=data.Quat6.Data.Q3;
+          if (calibratingD>0)
+          {
+            calibratingD--;
+            for (uint8_t axis = 1; axis < 4; axis++)
+            {
+              if (calibratingD ==(MPU_CALI_COUNT-1)){
+                d[axis]=0;  // Reset a[axis] at start of calibration
+              }
+              d[axis] += quatRAW[axis];
+              quatZero[axis] = d[axis]>>8;          // Calculate average, only the last itteration where (calibratingA == 0) is relevant
             }
-            //d[1] += data.Quat6.Data.Q1;             // Sum up 512 readings
-            //d[2] += data.Quat6.Data.Q2;             // Sum up 512 readings
-            //d[3] += data.Quat6.Data.Q3;             // Sum up 512 readings
-
-            if(calibratingD >= 1600){
-              //quatZero[1] = d[1] / 300;
-              //quatZero[2] = d[2] / 300;
-              //quatZero[3] = d[3] / 300;   // z だけキャリブレーションする。
-
-              // 此処で、acc の内積を出す。
-              //accIMZero = sqrt(accZero[0] * accZero[0] + accZero[1] * accZero[1] + accZero[2] * accZero[2]);
+            if (calibratingD == 0)
+            {
               //accZero[YAW] -= ACC_1G;
-              //accZero[YAW] = 0;   // 注) これをすると、海抜からの標高値になる。しなければ、起動地点の標高が原点となる。
+              //magZero[YAW] = 0;
 
-              calibratingD_f=1;
-              calibratingD = 0;
+              #ifndef QUAT_ANIMATION
+                SERIAL_PORT.print(F("Q1:"));
+                SERIAL_PORT.print(quatRAW[1]);
+                SERIAL_PORT.print(F(" Q2:"));
+                SERIAL_PORT.print(quatRAW[2]);
+                SERIAL_PORT.print(F(" Q3:"));
+                SERIAL_PORT.println(quatRAW[3]);
+
+                SERIAL_PORT.print(F("QZ1:"));
+                SERIAL_PORT.print(quatZero[1]);
+                SERIAL_PORT.print(F(" QZ2:"));
+                SERIAL_PORT.print(quatZero[2]);
+                SERIAL_PORT.print(F(" QZ3:"));
+                SERIAL_PORT.println(quatZero[3]);
+                //SERIAL_PORT.print(F(" Accuracy:"));
+                //SERIAL_PORT.println(data.Quat9.Data.Accuracy);
+              #endif
+            }
+
+
+          }
+
+          //quat[1] = ((double)(quatRAW[1] - quatZero[1])) / 1073741824.0; // Convert to double. Divide by 2^30  -- X
+          //quat[2] = ((double)(quatRAW[2] - quatZero[2])) / 1073741824.0; // Convert to double. Divide by 2^30  -- Y
+          //quat[3] = ((double)(quatRAW[3] - quatZero[3])) / 1073741824.0; // Convert to double. Divide by 2^30  -- Z
+          //quat[0] = sqrt(1.0 - ((quat[1] * quat[1]) + (quat[2] * quat[2]) + (quat[3] * quat[3])));    //  -- W
+
+          quat[0] = q[0];
+          quat[1] = q1;
+          quat[2] = q2;
+          quat[3] = q3;
+
+          rc=true;
+
+          #ifndef QUAT_ANIMATION
+            //SERIAL_PORT.print(F("Q1:"));
+            //SERIAL_PORT.print(q1, 3);
+            //SERIAL_PORT.print(F(" Q2:"));
+            //SERIAL_PORT.print(q2, 3);
+            //SERIAL_PORT.print(F(" Q3:"));
+            //SERIAL_PORT.print(q3, 3);
+            //SERIAL_PORT.print(F(" Accuracy:"));
+            //SERIAL_PORT.println(data.Quat9.Data.Accuracy);
+          #else
+            // Output the Quaternion data in the format expected by ZaneL's Node.js Quaternion animation tool
+            SERIAL_PORT.print(F("{\"quat_w\":"));
+            SERIAL_PORT.print(q0, 3);
+            SERIAL_PORT.print(F(", \"quat_x\":"));
+            SERIAL_PORT.print(q1, 3);
+            SERIAL_PORT.print(F(", \"quat_y\":"));
+            SERIAL_PORT.print(q2, 3);
+            SERIAL_PORT.print(F(", \"quat_z\":"));
+            SERIAL_PORT.print(q3, 3);
+            SERIAL_PORT.println(F("}"));
+          #endif
+        }
+      }
+    #else
+      // DMP 6 Fusion
+      if((data.header & DMP_header_bitmap_Quat6) > 0){
+        double q1 = ((double)data.Quat6.Data.Q1) / 1073741824.0; // Convert to double. Divide by 2^30  -- X
+        double q2 = ((double)data.Quat6.Data.Q2) / 1073741824.0; // Convert to double. Divide by 2^30  -- Y
+        double q3 = ((double)data.Quat6.Data.Q3) / 1073741824.0; // Convert to double. Divide by 2^30  -- Z
+        //double q0 = sqrt(1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3)));    //  -- W    こいつが、バグとの事。
+
+        double q0=1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3));
+        if(q0 >= 0.0) q0 = sqrt(q0);
+        else q0 = sqrt(q0 * -1.0) * -1.0;
+
+        if(!isnan(q0)){
+          if(calibratingD_f == 0){
+            calibratingD++;
+            if(calibratingD >= 800){
+              if(calibratingD == 800){
+                d[1]=0;
+                d[2]=0;
+                d[3]=0;
+              }
+              d[1] += data.Quat6.Data.Q1;             // Sum up 512 readings
+              d[2] += data.Quat6.Data.Q2;             // Sum up 512 readings
+              d[3] += data.Quat6.Data.Q3;             // Sum up 512 readings
+
+              if(calibratingD >= 1600){
+                quatZero[1] = d[1] / 1600;
+                quatZero[2] = d[2] / 1600;
+                quatZero[3] = d[3] / 1600; 
+
+                calibratingD_f=1;
+                calibratingD = 0;
+              }
             }
           }
+          //quatRAW[1] = data.Quat6.Data.Q1 - quatZero[1];
+          //quatRAW[2] = data.Quat6.Data.Q2 - quatZero[2];
+          //quatRAW[3] = data.Quat6.Data.Q3 - quatZero[3];
+
+          //q1 = ((double)quatRAW[1]) / 1073741824.0; // Convert to double. Divide by 2^30  -- X
+          //q2 = ((double)quatRAW[2]) / 1073741824.0; // Convert to double. Divide by 2^30  -- Y
+          //q3 = ((double)quatRAW[3]) / 1073741824.0; // Convert to double. Divide by 2^30  -- Z
+
+          //q0=1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3));
+          //if(q0 >= 0.0) q0 = sqrt(q0);
+          //else q0 = sqrt(q0 * -1.0) * -1.0;
+
+          quat[0]=q0; // W
+          quat[1]=q1; // X
+          quat[2]=q2; // Y
+          quat[3]=q3; // Z
+
+          rc=true;
+
+          //#define TEST_W0_X2
+          #ifdef TEST_W0_X2
+            SERIAL_PORT.print(F("Q0:"));
+            SERIAL_PORT.print(q0, 3);
+            SERIAL_PORT.print(F(" Q1:"));
+            SERIAL_PORT.print(q1, 3);
+            SERIAL_PORT.print(F(" Q2:"));
+            SERIAL_PORT.print(q2, 3);
+            SERIAL_PORT.print(F(" Q3:"));
+            SERIAL_PORT.println(q3, 3);
+          #endif
         }
-        //quatRAW[1] = data.Quat6.Data.Q1 - quatZero[1];
-        //quatRAW[2] = data.Quat6.Data.Q2 - quatZero[2];
-        //quatRAW[3] = data.Quat6.Data.Q3 - quatZero[3];
-
-        //q1 = ((double)quatRAW[1]) / 1073741824.0; // Convert to double. Divide by 2^30  -- X
-        //q2 = ((double)quatRAW[2]) / 1073741824.0; // Convert to double. Divide by 2^30  -- Y
-        //q3 = ((double)quatRAW[3]) / 1073741824.0; // Convert to double. Divide by 2^30  -- Z
-
-        //q0=1.0 - ((q1 * q1) + (q2 * q2) + (q3 * q3));
-        //if(q0 >= 0.0) q0 = sqrt(q0);
-        //else q0 = sqrt(q0 * -1.0) * -1.0;
-
-        quat[0]=q0; // W
-        quat[1]=q1; // X
-        quat[2]=q2; // Y
-        quat[3]=q3; // Z
-
-        rc=true;
-
-        //#define TEST_W0_X2
-        #ifdef TEST_W0_X2
-        SERIAL_PORT.print(F("Q0:"));
-        SERIAL_PORT.print(q0, 3);
-        SERIAL_PORT.print(F(" Q1:"));
-        SERIAL_PORT.print(q1, 3);
-        SERIAL_PORT.print(F(" Q2:"));
-        SERIAL_PORT.print(q2, 3);
-        SERIAL_PORT.print(F(" Q3:"));
-        SERIAL_PORT.println(q3, 3);
-        #endif
       }
-    }
     #endif
   }
   return rc;

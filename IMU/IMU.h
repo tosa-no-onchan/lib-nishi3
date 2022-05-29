@@ -37,9 +37,7 @@
 // そうすると、SparkFun_LSM9DS1_Arduino_Library/src/SparkFunLSM9DS1.cpp がビルドされて、ライブラリーが作成されて、
 // コンパイルが出来ます。
 
-#if defined(USE_COMPLE_FUSION)
-  #include <fw_ahrs.h>
-#else
+#if defined(USE_MADWICK)
   #include "MadgwickAHRS.h"
 #endif
 
@@ -50,7 +48,7 @@
 #define IMU_ERR_I2C		0x01
 
 // IMU による、位置の計算
-#define USE_IMU_DIST
+//#define USE_IMU_DIST
 
 struct CB{
   double dt[3][3];
@@ -86,6 +84,7 @@ public:
   float mx, my, mz, mx0, my0, mz0;
 
 	bool bConnected;
+  bool start_ok;
 
   //float aRes;
   //float gRes;
@@ -111,11 +110,15 @@ public:
 	uint8_t  begin( uint32_t hz = 800 );
 	uint16_t update( uint32_t option = 0 );
 
+  void QuaternionToEulerAngles(double q0, double q1, double q2, double q3,
+                             double& roll, double& pitch, double& yaw);
+
+  void compCB(float q[4],CB *cb);
+  void compCBd(double q[4],CB *cb);
+
 private:
 
-  #if defined(USE_COMPLE_FUSION)
-    AHRS_State_TypeDef ahrs;
-  #else
+  #if defined(USE_MADWICK)
     Madgwick filter;
   #endif
 
@@ -143,7 +146,6 @@ private:
   #endif
 
   void computeTF(unsigned long process_time);
-  void compCB(float q[4],CB *cb);
 
 };
 
