@@ -36,13 +36,13 @@ namespace rtabmap_ros
     MapGraph():
       header(),
       mapToOdom(),
-      posesId_length(0), posesId(NULL),
-      poses_length(0), poses(NULL),
-      links_length(0), links(NULL)
+      posesId_length(0), st_posesId(), posesId(nullptr),
+      poses_length(0), st_poses(), poses(nullptr),
+      links_length(0), st_links(), links(nullptr)
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
@@ -83,7 +83,7 @@ namespace rtabmap_ros
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
@@ -137,8 +137,8 @@ namespace rtabmap_ros
      return offset;
     }
 
-    const char * getType(){ return "rtabmap_ros/MapGraph"; };
-    const char * getMD5(){ return "903c2e44ed7e275e08ef323188cb38ee"; };
+    virtual const char * getType() override { return "rtabmap_ros/MapGraph"; };
+    virtual const char * getMD5() override { return "903c2e44ed7e275e08ef323188cb38ee"; };
 
   };
 

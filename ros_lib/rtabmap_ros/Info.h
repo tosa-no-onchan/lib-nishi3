@@ -7,6 +7,7 @@
 #include "ros/msg.h"
 #include "std_msgs/Header.h"
 #include "geometry_msgs/Transform.h"
+#include "rtabmap_ros/MapGraph.h"
 
 namespace rtabmap_ros
 {
@@ -84,6 +85,8 @@ namespace rtabmap_ros
       _localPath_type * localPath;
       typedef int32_t _currentGoalId_type;
       _currentGoalId_type currentGoalId;
+      typedef rtabmap_ros::MapGraph _odom_cache_type;
+      _odom_cache_type odom_cache;
 
     Info():
       header(),
@@ -92,25 +95,26 @@ namespace rtabmap_ros
       proximityDetectionId(0),
       landmarkId(0),
       loopClosureTransform(),
-      wmState_length(0), wmState(NULL),
-      posteriorKeys_length(0), posteriorKeys(NULL),
-      posteriorValues_length(0), posteriorValues(NULL),
-      likelihoodKeys_length(0), likelihoodKeys(NULL),
-      likelihoodValues_length(0), likelihoodValues(NULL),
-      rawLikelihoodKeys_length(0), rawLikelihoodKeys(NULL),
-      rawLikelihoodValues_length(0), rawLikelihoodValues(NULL),
-      weightsKeys_length(0), weightsKeys(NULL),
-      weightsValues_length(0), weightsValues(NULL),
-      labelsKeys_length(0), labelsKeys(NULL),
-      labelsValues_length(0), labelsValues(NULL),
-      statsKeys_length(0), statsKeys(NULL),
-      statsValues_length(0), statsValues(NULL),
-      localPath_length(0), localPath(NULL),
-      currentGoalId(0)
+      wmState_length(0), st_wmState(), wmState(nullptr),
+      posteriorKeys_length(0), st_posteriorKeys(), posteriorKeys(nullptr),
+      posteriorValues_length(0), st_posteriorValues(), posteriorValues(nullptr),
+      likelihoodKeys_length(0), st_likelihoodKeys(), likelihoodKeys(nullptr),
+      likelihoodValues_length(0), st_likelihoodValues(), likelihoodValues(nullptr),
+      rawLikelihoodKeys_length(0), st_rawLikelihoodKeys(), rawLikelihoodKeys(nullptr),
+      rawLikelihoodValues_length(0), st_rawLikelihoodValues(), rawLikelihoodValues(nullptr),
+      weightsKeys_length(0), st_weightsKeys(), weightsKeys(nullptr),
+      weightsValues_length(0), st_weightsValues(), weightsValues(nullptr),
+      labelsKeys_length(0), st_labelsKeys(), labelsKeys(nullptr),
+      labelsValues_length(0), st_labelsValues(), labelsValues(nullptr),
+      statsKeys_length(0), st_statsKeys(), statsKeys(nullptr),
+      statsValues_length(0), st_statsValues(), statsValues(nullptr),
+      localPath_length(0), st_localPath(), localPath(nullptr),
+      currentGoalId(0),
+      odom_cache()
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
@@ -393,10 +397,11 @@ namespace rtabmap_ros
       *(outbuffer + offset + 2) = (u_currentGoalId.base >> (8 * 2)) & 0xFF;
       *(outbuffer + offset + 3) = (u_currentGoalId.base >> (8 * 3)) & 0xFF;
       offset += sizeof(this->currentGoalId);
+      offset += this->odom_cache.serialize(outbuffer + offset);
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
@@ -760,11 +765,12 @@ namespace rtabmap_ros
       u_currentGoalId.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
       this->currentGoalId = u_currentGoalId.real;
       offset += sizeof(this->currentGoalId);
+      offset += this->odom_cache.deserialize(inbuffer + offset);
      return offset;
     }
 
-    const char * getType(){ return "rtabmap_ros/Info"; };
-    const char * getMD5(){ return "1348655e70ba2e47fa77d7c83e936d33"; };
+    virtual const char * getType() override { return "rtabmap_ros/Info"; };
+    virtual const char * getMD5() override { return "656fb5b8dfd8dfd2dc40226f35f2d440"; };
 
   };
 

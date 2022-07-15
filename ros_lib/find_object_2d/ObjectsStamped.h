@@ -25,7 +25,7 @@ namespace find_object_2d
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
@@ -33,7 +33,7 @@ namespace find_object_2d
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
@@ -41,8 +41,8 @@ namespace find_object_2d
      return offset;
     }
 
-    const char * getType(){ return "find_object_2d/ObjectsStamped"; };
-    const char * getMD5(){ return "5ec2736b62b92d101276c97e8db387b1"; };
+    virtual const char * getType() override { return "find_object_2d/ObjectsStamped"; };
+    virtual const char * getMD5() override { return "5ec2736b62b92d101276c97e8db387b1"; };
 
   };
 

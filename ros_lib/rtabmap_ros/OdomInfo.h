@@ -6,9 +6,12 @@
 #include <stdlib.h>
 #include "ros/msg.h"
 #include "std_msgs/Header.h"
+#include "sensor_msgs/CameraInfo.h"
 #include "geometry_msgs/Transform.h"
+#include "geometry_msgs/Pose.h"
 #include "rtabmap_ros/KeyPoint.h"
 #include "rtabmap_ros/Point3f.h"
+#include "sensor_msgs/PointCloud2.h"
 #include "rtabmap_ros/Point2f.h"
 
 namespace rtabmap_ros
@@ -70,6 +73,22 @@ namespace rtabmap_ros
       _gravityRollError_type gravityRollError;
       typedef float _gravityPitchError_type;
       _gravityPitchError_type gravityPitchError;
+      uint32_t localBundleIds_length;
+      typedef int32_t _localBundleIds_type;
+      _localBundleIds_type st_localBundleIds;
+      _localBundleIds_type * localBundleIds;
+      uint32_t localBundleModels_length;
+      typedef sensor_msgs::CameraInfo _localBundleModels_type;
+      _localBundleModels_type st_localBundleModels;
+      _localBundleModels_type * localBundleModels;
+      uint32_t localBundleModelTransforms_length;
+      typedef geometry_msgs::Transform _localBundleModelTransforms_type;
+      _localBundleModelTransforms_type st_localBundleModelTransforms;
+      _localBundleModelTransforms_type * localBundleModelTransforms;
+      uint32_t localBundlePoses_length;
+      typedef geometry_msgs::Pose _localBundlePoses_type;
+      _localBundlePoses_type st_localBundlePoses;
+      _localBundlePoses_type * localBundlePoses;
       typedef geometry_msgs::Transform _transform_type;
       _transform_type transform;
       typedef geometry_msgs::Transform _transformFiltered_type;
@@ -104,12 +123,8 @@ namespace rtabmap_ros
       typedef rtabmap_ros::Point3f _localMapValues_type;
       _localMapValues_type st_localMapValues;
       _localMapValues_type * localMapValues;
-      uint32_t localScanMap_length;
-      typedef uint8_t _localScanMap_type;
-      _localScanMap_type st_localScanMap;
-      _localScanMap_type * localScanMap;
-      typedef int32_t _localScanMapFormat_type;
-      _localScanMapFormat_type localScanMapFormat;
+      typedef sensor_msgs::PointCloud2 _localScanMap_type;
+      _localScanMap_type localScanMap;
       uint32_t refCorners_length;
       typedef rtabmap_ros::Point2f _refCorners_type;
       _refCorners_type st_refCorners;
@@ -151,26 +166,29 @@ namespace rtabmap_ros
       memoryUsage(0),
       gravityRollError(0),
       gravityPitchError(0),
+      localBundleIds_length(0), st_localBundleIds(), localBundleIds(nullptr),
+      localBundleModels_length(0), st_localBundleModels(), localBundleModels(nullptr),
+      localBundleModelTransforms_length(0), st_localBundleModelTransforms(), localBundleModelTransforms(nullptr),
+      localBundlePoses_length(0), st_localBundlePoses(), localBundlePoses(nullptr),
       transform(),
       transformFiltered(),
       transformGroundTruth(),
       guess(),
       type(0),
-      wordsKeys_length(0), wordsKeys(NULL),
-      wordsValues_length(0), wordsValues(NULL),
-      wordMatches_length(0), wordMatches(NULL),
-      wordInliers_length(0), wordInliers(NULL),
-      localMapKeys_length(0), localMapKeys(NULL),
-      localMapValues_length(0), localMapValues(NULL),
-      localScanMap_length(0), localScanMap(NULL),
-      localScanMapFormat(0),
-      refCorners_length(0), refCorners(NULL),
-      newCorners_length(0), newCorners(NULL),
-      cornerInliers_length(0), cornerInliers(NULL)
+      wordsKeys_length(0), st_wordsKeys(), wordsKeys(nullptr),
+      wordsValues_length(0), st_wordsValues(), wordsValues(nullptr),
+      wordMatches_length(0), st_wordMatches(), wordMatches(nullptr),
+      wordInliers_length(0), st_wordInliers(), wordInliers(nullptr),
+      localMapKeys_length(0), st_localMapKeys(), localMapKeys(nullptr),
+      localMapValues_length(0), st_localMapValues(), localMapValues(nullptr),
+      localScanMap(),
+      refCorners_length(0), st_refCorners(), refCorners(nullptr),
+      newCorners_length(0), st_newCorners(), newCorners(nullptr),
+      cornerInliers_length(0), st_cornerInliers(), cornerInliers(nullptr)
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
@@ -421,6 +439,47 @@ namespace rtabmap_ros
       *(outbuffer + offset + 2) = (u_gravityPitchError.base >> (8 * 2)) & 0xFF;
       *(outbuffer + offset + 3) = (u_gravityPitchError.base >> (8 * 3)) & 0xFF;
       offset += sizeof(this->gravityPitchError);
+      *(outbuffer + offset + 0) = (this->localBundleIds_length >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (this->localBundleIds_length >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (this->localBundleIds_length >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (this->localBundleIds_length >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->localBundleIds_length);
+      for( uint32_t i = 0; i < localBundleIds_length; i++){
+      union {
+        int32_t real;
+        uint32_t base;
+      } u_localBundleIdsi;
+      u_localBundleIdsi.real = this->localBundleIds[i];
+      *(outbuffer + offset + 0) = (u_localBundleIdsi.base >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (u_localBundleIdsi.base >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (u_localBundleIdsi.base >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (u_localBundleIdsi.base >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->localBundleIds[i]);
+      }
+      *(outbuffer + offset + 0) = (this->localBundleModels_length >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (this->localBundleModels_length >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (this->localBundleModels_length >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (this->localBundleModels_length >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->localBundleModels_length);
+      for( uint32_t i = 0; i < localBundleModels_length; i++){
+      offset += this->localBundleModels[i].serialize(outbuffer + offset);
+      }
+      *(outbuffer + offset + 0) = (this->localBundleModelTransforms_length >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (this->localBundleModelTransforms_length >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (this->localBundleModelTransforms_length >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (this->localBundleModelTransforms_length >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->localBundleModelTransforms_length);
+      for( uint32_t i = 0; i < localBundleModelTransforms_length; i++){
+      offset += this->localBundleModelTransforms[i].serialize(outbuffer + offset);
+      }
+      *(outbuffer + offset + 0) = (this->localBundlePoses_length >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (this->localBundlePoses_length >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (this->localBundlePoses_length >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (this->localBundlePoses_length >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->localBundlePoses_length);
+      for( uint32_t i = 0; i < localBundlePoses_length; i++){
+      offset += this->localBundlePoses[i].serialize(outbuffer + offset);
+      }
       offset += this->transform.serialize(outbuffer + offset);
       offset += this->transformFiltered.serialize(outbuffer + offset);
       offset += this->transformGroundTruth.serialize(outbuffer + offset);
@@ -519,25 +578,7 @@ namespace rtabmap_ros
       for( uint32_t i = 0; i < localMapValues_length; i++){
       offset += this->localMapValues[i].serialize(outbuffer + offset);
       }
-      *(outbuffer + offset + 0) = (this->localScanMap_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->localScanMap_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->localScanMap_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->localScanMap_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->localScanMap_length);
-      for( uint32_t i = 0; i < localScanMap_length; i++){
-      *(outbuffer + offset + 0) = (this->localScanMap[i] >> (8 * 0)) & 0xFF;
-      offset += sizeof(this->localScanMap[i]);
-      }
-      union {
-        int32_t real;
-        uint32_t base;
-      } u_localScanMapFormat;
-      u_localScanMapFormat.real = this->localScanMapFormat;
-      *(outbuffer + offset + 0) = (u_localScanMapFormat.base >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (u_localScanMapFormat.base >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (u_localScanMapFormat.base >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (u_localScanMapFormat.base >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->localScanMapFormat);
+      offset += this->localScanMap.serialize(outbuffer + offset);
       *(outbuffer + offset + 0) = (this->refCorners_length >> (8 * 0)) & 0xFF;
       *(outbuffer + offset + 1) = (this->refCorners_length >> (8 * 1)) & 0xFF;
       *(outbuffer + offset + 2) = (this->refCorners_length >> (8 * 2)) & 0xFF;
@@ -574,7 +615,7 @@ namespace rtabmap_ros
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
@@ -850,6 +891,64 @@ namespace rtabmap_ros
       u_gravityPitchError.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
       this->gravityPitchError = u_gravityPitchError.real;
       offset += sizeof(this->gravityPitchError);
+      uint32_t localBundleIds_lengthT = ((uint32_t) (*(inbuffer + offset))); 
+      localBundleIds_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
+      localBundleIds_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
+      localBundleIds_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
+      offset += sizeof(this->localBundleIds_length);
+      if(localBundleIds_lengthT > localBundleIds_length)
+        this->localBundleIds = (int32_t*)realloc(this->localBundleIds, localBundleIds_lengthT * sizeof(int32_t));
+      localBundleIds_length = localBundleIds_lengthT;
+      for( uint32_t i = 0; i < localBundleIds_length; i++){
+      union {
+        int32_t real;
+        uint32_t base;
+      } u_st_localBundleIds;
+      u_st_localBundleIds.base = 0;
+      u_st_localBundleIds.base |= ((uint32_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      u_st_localBundleIds.base |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1);
+      u_st_localBundleIds.base |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2);
+      u_st_localBundleIds.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
+      this->st_localBundleIds = u_st_localBundleIds.real;
+      offset += sizeof(this->st_localBundleIds);
+        memcpy( &(this->localBundleIds[i]), &(this->st_localBundleIds), sizeof(int32_t));
+      }
+      uint32_t localBundleModels_lengthT = ((uint32_t) (*(inbuffer + offset))); 
+      localBundleModels_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
+      localBundleModels_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
+      localBundleModels_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
+      offset += sizeof(this->localBundleModels_length);
+      if(localBundleModels_lengthT > localBundleModels_length)
+        this->localBundleModels = (sensor_msgs::CameraInfo*)realloc(this->localBundleModels, localBundleModels_lengthT * sizeof(sensor_msgs::CameraInfo));
+      localBundleModels_length = localBundleModels_lengthT;
+      for( uint32_t i = 0; i < localBundleModels_length; i++){
+      offset += this->st_localBundleModels.deserialize(inbuffer + offset);
+        memcpy( &(this->localBundleModels[i]), &(this->st_localBundleModels), sizeof(sensor_msgs::CameraInfo));
+      }
+      uint32_t localBundleModelTransforms_lengthT = ((uint32_t) (*(inbuffer + offset))); 
+      localBundleModelTransforms_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
+      localBundleModelTransforms_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
+      localBundleModelTransforms_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
+      offset += sizeof(this->localBundleModelTransforms_length);
+      if(localBundleModelTransforms_lengthT > localBundleModelTransforms_length)
+        this->localBundleModelTransforms = (geometry_msgs::Transform*)realloc(this->localBundleModelTransforms, localBundleModelTransforms_lengthT * sizeof(geometry_msgs::Transform));
+      localBundleModelTransforms_length = localBundleModelTransforms_lengthT;
+      for( uint32_t i = 0; i < localBundleModelTransforms_length; i++){
+      offset += this->st_localBundleModelTransforms.deserialize(inbuffer + offset);
+        memcpy( &(this->localBundleModelTransforms[i]), &(this->st_localBundleModelTransforms), sizeof(geometry_msgs::Transform));
+      }
+      uint32_t localBundlePoses_lengthT = ((uint32_t) (*(inbuffer + offset))); 
+      localBundlePoses_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
+      localBundlePoses_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
+      localBundlePoses_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
+      offset += sizeof(this->localBundlePoses_length);
+      if(localBundlePoses_lengthT > localBundlePoses_length)
+        this->localBundlePoses = (geometry_msgs::Pose*)realloc(this->localBundlePoses, localBundlePoses_lengthT * sizeof(geometry_msgs::Pose));
+      localBundlePoses_length = localBundlePoses_lengthT;
+      for( uint32_t i = 0; i < localBundlePoses_length; i++){
+      offset += this->st_localBundlePoses.deserialize(inbuffer + offset);
+        memcpy( &(this->localBundlePoses[i]), &(this->st_localBundlePoses), sizeof(geometry_msgs::Pose));
+      }
       offset += this->transform.deserialize(inbuffer + offset);
       offset += this->transformFiltered.deserialize(inbuffer + offset);
       offset += this->transformGroundTruth.deserialize(inbuffer + offset);
@@ -977,30 +1076,7 @@ namespace rtabmap_ros
       offset += this->st_localMapValues.deserialize(inbuffer + offset);
         memcpy( &(this->localMapValues[i]), &(this->st_localMapValues), sizeof(rtabmap_ros::Point3f));
       }
-      uint32_t localScanMap_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      localScanMap_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      localScanMap_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      localScanMap_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->localScanMap_length);
-      if(localScanMap_lengthT > localScanMap_length)
-        this->localScanMap = (uint8_t*)realloc(this->localScanMap, localScanMap_lengthT * sizeof(uint8_t));
-      localScanMap_length = localScanMap_lengthT;
-      for( uint32_t i = 0; i < localScanMap_length; i++){
-      this->st_localScanMap =  ((uint8_t) (*(inbuffer + offset)));
-      offset += sizeof(this->st_localScanMap);
-        memcpy( &(this->localScanMap[i]), &(this->st_localScanMap), sizeof(uint8_t));
-      }
-      union {
-        int32_t real;
-        uint32_t base;
-      } u_localScanMapFormat;
-      u_localScanMapFormat.base = 0;
-      u_localScanMapFormat.base |= ((uint32_t) (*(inbuffer + offset + 0))) << (8 * 0);
-      u_localScanMapFormat.base |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1);
-      u_localScanMapFormat.base |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2);
-      u_localScanMapFormat.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
-      this->localScanMapFormat = u_localScanMapFormat.real;
-      offset += sizeof(this->localScanMapFormat);
+      offset += this->localScanMap.deserialize(inbuffer + offset);
       uint32_t refCorners_lengthT = ((uint32_t) (*(inbuffer + offset))); 
       refCorners_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
       refCorners_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
@@ -1050,8 +1126,8 @@ namespace rtabmap_ros
      return offset;
     }
 
-    const char * getType(){ return "rtabmap_ros/OdomInfo"; };
-    const char * getMD5(){ return "6eed65f48e7484f822a9994d9a28569e"; };
+    virtual const char * getType() override { return "rtabmap_ros/OdomInfo"; };
+    virtual const char * getMD5() override { return "1fa598d3d5fa4fd64473fc2a4cfbe1b3"; };
 
   };
 

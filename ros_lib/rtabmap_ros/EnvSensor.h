@@ -27,7 +27,7 @@ namespace rtabmap_ros
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
@@ -45,7 +45,7 @@ namespace rtabmap_ros
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
@@ -64,8 +64,8 @@ namespace rtabmap_ros
      return offset;
     }
 
-    const char * getType(){ return "rtabmap_ros/EnvSensor"; };
-    const char * getMD5(){ return "9df4dc52b9b74f3a81eaae9eecf9c0e0"; };
+    virtual const char * getType() override { return "rtabmap_ros/EnvSensor"; };
+    virtual const char * getMD5() override { return "9df4dc52b9b74f3a81eaae9eecf9c0e0"; };
 
   };
 

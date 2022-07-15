@@ -43,7 +43,6 @@
   #include "ArduinoHardware.h"
 #endif
 
-
 namespace ros
 {
 #if defined(__AVR_ATmega8__) or defined(__AVR_ATmega168__)

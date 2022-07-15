@@ -24,7 +24,7 @@ static const char SETLABEL[] = "rtabmap_ros/SetLabel";
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       union {
@@ -45,7 +45,7 @@ static const char SETLABEL[] = "rtabmap_ros/SetLabel";
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       union {
@@ -71,8 +71,8 @@ static const char SETLABEL[] = "rtabmap_ros/SetLabel";
      return offset;
     }
 
-    const char * getType(){ return SETLABEL; };
-    const char * getMD5(){ return "baadfb04a43ec26085eb7bebc9a80862"; };
+    virtual const char * getType() override { return SETLABEL; };
+    virtual const char * getMD5() override { return "baadfb04a43ec26085eb7bebc9a80862"; };
 
   };
 
@@ -84,20 +84,20 @@ static const char SETLABEL[] = "rtabmap_ros/SetLabel";
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
      return offset;
     }
 
-    const char * getType(){ return SETLABEL; };
-    const char * getMD5(){ return "d41d8cd98f00b204e9800998ecf8427e"; };
+    virtual const char * getType() override { return SETLABEL; };
+    virtual const char * getMD5() override { return "d41d8cd98f00b204e9800998ecf8427e"; };
 
   };
 

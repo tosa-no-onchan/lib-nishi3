@@ -28,7 +28,7 @@ static const char GETMAP[] = "rtabmap_ros/GetMap";
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       union {
@@ -55,7 +55,7 @@ static const char GETMAP[] = "rtabmap_ros/GetMap";
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       union {
@@ -85,8 +85,8 @@ static const char GETMAP[] = "rtabmap_ros/GetMap";
      return offset;
     }
 
-    const char * getType(){ return GETMAP; };
-    const char * getMD5(){ return "6213f9f13cced23f4d224b22f59d839c"; };
+    virtual const char * getType() override { return GETMAP; };
+    virtual const char * getMD5() override { return "6213f9f13cced23f4d224b22f59d839c"; };
 
   };
 
@@ -101,22 +101,22 @@ static const char GETMAP[] = "rtabmap_ros/GetMap";
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       offset += this->data.serialize(outbuffer + offset);
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       offset += this->data.deserialize(inbuffer + offset);
      return offset;
     }
 
-    const char * getType(){ return GETMAP; };
-    const char * getMD5(){ return "aacb4ae752c0c66efebe1914af418fbc"; };
+    virtual const char * getType() override { return GETMAP; };
+    virtual const char * getMD5() override { return "1e1e5080584921ecf94411d4f3ce5c37"; };
 
   };
 

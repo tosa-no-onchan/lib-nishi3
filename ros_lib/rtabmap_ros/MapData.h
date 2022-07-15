@@ -27,11 +27,11 @@ namespace rtabmap_ros
     MapData():
       header(),
       graph(),
-      nodes_length(0), nodes(NULL)
+      nodes_length(0), st_nodes(), nodes(nullptr)
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
@@ -47,7 +47,7 @@ namespace rtabmap_ros
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
@@ -67,8 +67,8 @@ namespace rtabmap_ros
      return offset;
     }
 
-    const char * getType(){ return "rtabmap_ros/MapData"; };
-    const char * getMD5(){ return "c08cdd9bd760e475724e80eaeb71af47"; };
+    virtual const char * getType() override { return "rtabmap_ros/MapData"; };
+    virtual const char * getMD5() override { return "8f9b7a6a9f675febbbe86bf0926d6fcd"; };
 
   };
 

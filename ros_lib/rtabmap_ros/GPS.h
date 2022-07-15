@@ -35,7 +35,7 @@ namespace rtabmap_ros
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       offset += serializeAvrFloat64(outbuffer + offset, this->stamp);
@@ -47,7 +47,7 @@ namespace rtabmap_ros
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       offset += deserializeAvrFloat64(inbuffer + offset, &(this->stamp));
@@ -59,8 +59,8 @@ namespace rtabmap_ros
      return offset;
     }
 
-    const char * getType(){ return "rtabmap_ros/GPS"; };
-    const char * getMD5(){ return "0acde0d09a1ab74993cf4e41ff4eae49"; };
+    virtual const char * getType() override { return "rtabmap_ros/GPS"; };
+    virtual const char * getMD5() override { return "0acde0d09a1ab74993cf4e41ff4eae49"; };
 
   };
 

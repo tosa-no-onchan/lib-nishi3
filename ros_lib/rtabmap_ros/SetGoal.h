@@ -28,7 +28,7 @@ static const char SETGOAL[] = "rtabmap_ros/SetGoal";
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       union {
@@ -54,7 +54,7 @@ static const char SETGOAL[] = "rtabmap_ros/SetGoal";
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       union {
@@ -89,8 +89,8 @@ static const char SETGOAL[] = "rtabmap_ros/SetGoal";
      return offset;
     }
 
-    const char * getType(){ return SETGOAL; };
-    const char * getMD5(){ return "375ab24253ceefb71e0472c1b972fff4"; };
+    virtual const char * getType() override { return SETGOAL; };
+    virtual const char * getMD5() override { return "375ab24253ceefb71e0472c1b972fff4"; };
 
   };
 
@@ -109,13 +109,13 @@ static const char SETGOAL[] = "rtabmap_ros/SetGoal";
       _planning_time_type planning_time;
 
     SetGoalResponse():
-      path_ids_length(0), path_ids(NULL),
-      path_poses_length(0), path_poses(NULL),
+      path_ids_length(0), st_path_ids(), path_ids(nullptr),
+      path_poses_length(0), st_path_poses(), path_poses(nullptr),
       planning_time(0)
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       *(outbuffer + offset + 0) = (this->path_ids_length >> (8 * 0)) & 0xFF;
@@ -156,7 +156,7 @@ static const char SETGOAL[] = "rtabmap_ros/SetGoal";
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       uint32_t path_ids_lengthT = ((uint32_t) (*(inbuffer + offset))); 
@@ -207,8 +207,8 @@ static const char SETGOAL[] = "rtabmap_ros/SetGoal";
      return offset;
     }
 
-    const char * getType(){ return SETGOAL; };
-    const char * getMD5(){ return "adca6a85ab21f03d516676b74309de28"; };
+    virtual const char * getType() override { return SETGOAL; };
+    virtual const char * getMD5() override { return "adca6a85ab21f03d516676b74309de28"; };
 
   };
 

@@ -36,7 +36,7 @@ static const char RESETPOSE[] = "rtabmap_ros/ResetPose";
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       union {
@@ -102,7 +102,7 @@ static const char RESETPOSE[] = "rtabmap_ros/ResetPose";
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       union {
@@ -174,8 +174,8 @@ static const char RESETPOSE[] = "rtabmap_ros/ResetPose";
      return offset;
     }
 
-    const char * getType(){ return RESETPOSE; };
-    const char * getMD5(){ return "3d5697f0c9e8859325238b57521f8f4e"; };
+    virtual const char * getType() override { return RESETPOSE; };
+    virtual const char * getMD5() override { return "3d5697f0c9e8859325238b57521f8f4e"; };
 
   };
 
@@ -187,20 +187,20 @@ static const char RESETPOSE[] = "rtabmap_ros/ResetPose";
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
      return offset;
     }
 
-    const char * getType(){ return RESETPOSE; };
-    const char * getMD5(){ return "d41d8cd98f00b204e9800998ecf8427e"; };
+    virtual const char * getType() override { return RESETPOSE; };
+    virtual const char * getMD5() override { return "d41d8cd98f00b204e9800998ecf8427e"; };
 
   };
 

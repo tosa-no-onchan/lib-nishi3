@@ -105,10 +105,14 @@ namespace rtabmap_ros
       _grid_cell_size_type grid_cell_size;
       typedef rtabmap_ros::Point3f _grid_view_point_type;
       _grid_view_point_type grid_view_point;
-      uint32_t wordIds_length;
-      typedef int32_t _wordIds_type;
-      _wordIds_type st_wordIds;
-      _wordIds_type * wordIds;
+      uint32_t wordIdKeys_length;
+      typedef int32_t _wordIdKeys_type;
+      _wordIdKeys_type st_wordIdKeys;
+      _wordIdKeys_type * wordIdKeys;
+      uint32_t wordIdValues_length;
+      typedef int32_t _wordIdValues_type;
+      _wordIdValues_type st_wordIdValues;
+      _wordIdValues_type * wordIdValues;
       uint32_t wordKpts_length;
       typedef rtabmap_ros::KeyPoint _wordKpts_type;
       _wordKpts_type st_wordKpts;
@@ -139,37 +143,38 @@ namespace rtabmap_ros
       pose(),
       groundTruthPose(),
       gps(),
-      image_length(0), image(NULL),
-      depth_length(0), depth(NULL),
-      fx_length(0), fx(NULL),
-      fy_length(0), fy(NULL),
-      cx_length(0), cx(NULL),
-      cy_length(0), cy(NULL),
-      width_length(0), width(NULL),
-      height_length(0), height(NULL),
+      image_length(0), st_image(), image(nullptr),
+      depth_length(0), st_depth(), depth(nullptr),
+      fx_length(0), st_fx(), fx(nullptr),
+      fy_length(0), st_fy(), fy(nullptr),
+      cx_length(0), st_cx(), cx(nullptr),
+      cy_length(0), st_cy(), cy(nullptr),
+      width_length(0), st_width(), width(nullptr),
+      height_length(0), st_height(), height(nullptr),
       baseline(0),
-      localTransform_length(0), localTransform(NULL),
-      laserScan_length(0), laserScan(NULL),
+      localTransform_length(0), st_localTransform(), localTransform(nullptr),
+      laserScan_length(0), st_laserScan(), laserScan(nullptr),
       laserScanMaxPts(0),
       laserScanMaxRange(0),
       laserScanFormat(0),
       laserScanLocalTransform(),
-      userData_length(0), userData(NULL),
-      grid_ground_length(0), grid_ground(NULL),
-      grid_obstacles_length(0), grid_obstacles(NULL),
-      grid_empty_cells_length(0), grid_empty_cells(NULL),
+      userData_length(0), st_userData(), userData(nullptr),
+      grid_ground_length(0), st_grid_ground(), grid_ground(nullptr),
+      grid_obstacles_length(0), st_grid_obstacles(), grid_obstacles(nullptr),
+      grid_empty_cells_length(0), st_grid_empty_cells(), grid_empty_cells(nullptr),
       grid_cell_size(0),
       grid_view_point(),
-      wordIds_length(0), wordIds(NULL),
-      wordKpts_length(0), wordKpts(NULL),
-      wordPts_length(0), wordPts(NULL),
-      wordDescriptors_length(0), wordDescriptors(NULL),
-      globalDescriptors_length(0), globalDescriptors(NULL),
-      env_sensors_length(0), env_sensors(NULL)
+      wordIdKeys_length(0), st_wordIdKeys(), wordIdKeys(nullptr),
+      wordIdValues_length(0), st_wordIdValues(), wordIdValues(nullptr),
+      wordKpts_length(0), st_wordKpts(), wordKpts(nullptr),
+      wordPts_length(0), st_wordPts(), wordPts(nullptr),
+      wordDescriptors_length(0), st_wordDescriptors(), wordDescriptors(nullptr),
+      globalDescriptors_length(0), st_globalDescriptors(), globalDescriptors(nullptr),
+      env_sensors_length(0), st_env_sensors(), env_sensors(nullptr)
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       union {
@@ -436,22 +441,39 @@ namespace rtabmap_ros
       *(outbuffer + offset + 3) = (u_grid_cell_size.base >> (8 * 3)) & 0xFF;
       offset += sizeof(this->grid_cell_size);
       offset += this->grid_view_point.serialize(outbuffer + offset);
-      *(outbuffer + offset + 0) = (this->wordIds_length >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (this->wordIds_length >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (this->wordIds_length >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (this->wordIds_length >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->wordIds_length);
-      for( uint32_t i = 0; i < wordIds_length; i++){
+      *(outbuffer + offset + 0) = (this->wordIdKeys_length >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (this->wordIdKeys_length >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (this->wordIdKeys_length >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (this->wordIdKeys_length >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->wordIdKeys_length);
+      for( uint32_t i = 0; i < wordIdKeys_length; i++){
       union {
         int32_t real;
         uint32_t base;
-      } u_wordIdsi;
-      u_wordIdsi.real = this->wordIds[i];
-      *(outbuffer + offset + 0) = (u_wordIdsi.base >> (8 * 0)) & 0xFF;
-      *(outbuffer + offset + 1) = (u_wordIdsi.base >> (8 * 1)) & 0xFF;
-      *(outbuffer + offset + 2) = (u_wordIdsi.base >> (8 * 2)) & 0xFF;
-      *(outbuffer + offset + 3) = (u_wordIdsi.base >> (8 * 3)) & 0xFF;
-      offset += sizeof(this->wordIds[i]);
+      } u_wordIdKeysi;
+      u_wordIdKeysi.real = this->wordIdKeys[i];
+      *(outbuffer + offset + 0) = (u_wordIdKeysi.base >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (u_wordIdKeysi.base >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (u_wordIdKeysi.base >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (u_wordIdKeysi.base >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->wordIdKeys[i]);
+      }
+      *(outbuffer + offset + 0) = (this->wordIdValues_length >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (this->wordIdValues_length >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (this->wordIdValues_length >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (this->wordIdValues_length >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->wordIdValues_length);
+      for( uint32_t i = 0; i < wordIdValues_length; i++){
+      union {
+        int32_t real;
+        uint32_t base;
+      } u_wordIdValuesi;
+      u_wordIdValuesi.real = this->wordIdValues[i];
+      *(outbuffer + offset + 0) = (u_wordIdValuesi.base >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (u_wordIdValuesi.base >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (u_wordIdValuesi.base >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (u_wordIdValuesi.base >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->wordIdValues[i]);
       }
       *(outbuffer + offset + 0) = (this->wordKpts_length >> (8 * 0)) & 0xFF;
       *(outbuffer + offset + 1) = (this->wordKpts_length >> (8 * 1)) & 0xFF;
@@ -497,7 +519,7 @@ namespace rtabmap_ros
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       union {
@@ -838,27 +860,49 @@ namespace rtabmap_ros
       this->grid_cell_size = u_grid_cell_size.real;
       offset += sizeof(this->grid_cell_size);
       offset += this->grid_view_point.deserialize(inbuffer + offset);
-      uint32_t wordIds_lengthT = ((uint32_t) (*(inbuffer + offset))); 
-      wordIds_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
-      wordIds_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
-      wordIds_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
-      offset += sizeof(this->wordIds_length);
-      if(wordIds_lengthT > wordIds_length)
-        this->wordIds = (int32_t*)realloc(this->wordIds, wordIds_lengthT * sizeof(int32_t));
-      wordIds_length = wordIds_lengthT;
-      for( uint32_t i = 0; i < wordIds_length; i++){
+      uint32_t wordIdKeys_lengthT = ((uint32_t) (*(inbuffer + offset))); 
+      wordIdKeys_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
+      wordIdKeys_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
+      wordIdKeys_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
+      offset += sizeof(this->wordIdKeys_length);
+      if(wordIdKeys_lengthT > wordIdKeys_length)
+        this->wordIdKeys = (int32_t*)realloc(this->wordIdKeys, wordIdKeys_lengthT * sizeof(int32_t));
+      wordIdKeys_length = wordIdKeys_lengthT;
+      for( uint32_t i = 0; i < wordIdKeys_length; i++){
       union {
         int32_t real;
         uint32_t base;
-      } u_st_wordIds;
-      u_st_wordIds.base = 0;
-      u_st_wordIds.base |= ((uint32_t) (*(inbuffer + offset + 0))) << (8 * 0);
-      u_st_wordIds.base |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1);
-      u_st_wordIds.base |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2);
-      u_st_wordIds.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
-      this->st_wordIds = u_st_wordIds.real;
-      offset += sizeof(this->st_wordIds);
-        memcpy( &(this->wordIds[i]), &(this->st_wordIds), sizeof(int32_t));
+      } u_st_wordIdKeys;
+      u_st_wordIdKeys.base = 0;
+      u_st_wordIdKeys.base |= ((uint32_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      u_st_wordIdKeys.base |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1);
+      u_st_wordIdKeys.base |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2);
+      u_st_wordIdKeys.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
+      this->st_wordIdKeys = u_st_wordIdKeys.real;
+      offset += sizeof(this->st_wordIdKeys);
+        memcpy( &(this->wordIdKeys[i]), &(this->st_wordIdKeys), sizeof(int32_t));
+      }
+      uint32_t wordIdValues_lengthT = ((uint32_t) (*(inbuffer + offset))); 
+      wordIdValues_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
+      wordIdValues_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
+      wordIdValues_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
+      offset += sizeof(this->wordIdValues_length);
+      if(wordIdValues_lengthT > wordIdValues_length)
+        this->wordIdValues = (int32_t*)realloc(this->wordIdValues, wordIdValues_lengthT * sizeof(int32_t));
+      wordIdValues_length = wordIdValues_lengthT;
+      for( uint32_t i = 0; i < wordIdValues_length; i++){
+      union {
+        int32_t real;
+        uint32_t base;
+      } u_st_wordIdValues;
+      u_st_wordIdValues.base = 0;
+      u_st_wordIdValues.base |= ((uint32_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      u_st_wordIdValues.base |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1);
+      u_st_wordIdValues.base |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2);
+      u_st_wordIdValues.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
+      this->st_wordIdValues = u_st_wordIdValues.real;
+      offset += sizeof(this->st_wordIdValues);
+        memcpy( &(this->wordIdValues[i]), &(this->st_wordIdValues), sizeof(int32_t));
       }
       uint32_t wordKpts_lengthT = ((uint32_t) (*(inbuffer + offset))); 
       wordKpts_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
@@ -924,8 +968,8 @@ namespace rtabmap_ros
      return offset;
     }
 
-    const char * getType(){ return "rtabmap_ros/NodeData"; };
-    const char * getMD5(){ return "1ed748d5a09b9a90c8d1e3db691aa75e"; };
+    virtual const char * getType() override { return "rtabmap_ros/NodeData"; };
+    virtual const char * getMD5() override { return "31b69635c081fb7b97ce2c35487b27a6"; };
 
   };
 

@@ -31,11 +31,11 @@ namespace rtabmap_ros
       rows(0),
       cols(0),
       type(0),
-      data_length(0), data(NULL)
+      data_length(0), st_data(), data(nullptr)
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
@@ -66,7 +66,7 @@ namespace rtabmap_ros
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
@@ -101,8 +101,8 @@ namespace rtabmap_ros
      return offset;
     }
 
-    const char * getType(){ return "rtabmap_ros/UserData"; };
-    const char * getMD5(){ return "e2b3ca3c96ccd4baa19ca1aeef9ec767"; };
+    virtual const char * getType() override { return "rtabmap_ros/UserData"; };
+    virtual const char * getMD5() override { return "e2b3ca3c96ccd4baa19ca1aeef9ec767"; };
 
   };
 

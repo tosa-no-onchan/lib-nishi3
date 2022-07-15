@@ -4,8 +4,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "ros/msg.h"
-#include "rtabmap_ros/Path.h"
 #include "geometry_msgs/PoseStamped.h"
+#include "rtabmap_ros/Path.h"
 
 namespace rtabmap_ros
 {
@@ -29,7 +29,7 @@ static const char GETPLAN[] = "rtabmap_ros/GetPlan";
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       union {
@@ -56,7 +56,7 @@ static const char GETPLAN[] = "rtabmap_ros/GetPlan";
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       union {
@@ -85,8 +85,8 @@ static const char GETPLAN[] = "rtabmap_ros/GetPlan";
      return offset;
     }
 
-    const char * getType(){ return GETPLAN; };
-    const char * getMD5(){ return "93cea387b2aa9245414c000574ff1591"; };
+    virtual const char * getType() override { return GETPLAN; };
+    virtual const char * getMD5() override { return "93cea387b2aa9245414c000574ff1591"; };
 
   };
 
@@ -101,22 +101,22 @@ static const char GETPLAN[] = "rtabmap_ros/GetPlan";
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       offset += this->plan.serialize(outbuffer + offset);
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       offset += this->plan.deserialize(inbuffer + offset);
      return offset;
     }
 
-    const char * getType(){ return GETPLAN; };
-    const char * getMD5(){ return "0412b9858bfcee4b2ee4fbf2f8eb5028"; };
+    virtual const char * getType() override { return GETPLAN; };
+    virtual const char * getMD5() override { return "0412b9858bfcee4b2ee4fbf2f8eb5028"; };
 
   };
 

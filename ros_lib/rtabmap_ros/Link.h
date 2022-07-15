@@ -32,7 +32,7 @@ namespace rtabmap_ros
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       union {
@@ -72,7 +72,7 @@ namespace rtabmap_ros
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       union {
@@ -115,8 +115,8 @@ namespace rtabmap_ros
      return offset;
     }
 
-    const char * getType(){ return "rtabmap_ros/Link"; };
-    const char * getMD5(){ return "48bafa7643c4731e90b468e7c4fa06b6"; };
+    virtual const char * getType() override { return "rtabmap_ros/Link"; };
+    virtual const char * getMD5() override { return "48bafa7643c4731e90b468e7c4fa06b6"; };
 
   };
 

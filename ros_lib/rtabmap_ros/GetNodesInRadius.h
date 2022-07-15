@@ -24,17 +24,20 @@ static const char GETNODESINRADIUS[] = "rtabmap_ros/GetNodesInRadius";
       _z_type z;
       typedef float _radius_type;
       _radius_type radius;
+      typedef int32_t _k_type;
+      _k_type k;
 
     GetNodesInRadiusRequest():
       node_id(0),
       x(0),
       y(0),
       z(0),
-      radius(0)
+      radius(0),
+      k(0)
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       union {
@@ -87,10 +90,20 @@ static const char GETNODESINRADIUS[] = "rtabmap_ros/GetNodesInRadius";
       *(outbuffer + offset + 2) = (u_radius.base >> (8 * 2)) & 0xFF;
       *(outbuffer + offset + 3) = (u_radius.base >> (8 * 3)) & 0xFF;
       offset += sizeof(this->radius);
+      union {
+        int32_t real;
+        uint32_t base;
+      } u_k;
+      u_k.real = this->k;
+      *(outbuffer + offset + 0) = (u_k.base >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (u_k.base >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (u_k.base >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (u_k.base >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->k);
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       union {
@@ -148,11 +161,22 @@ static const char GETNODESINRADIUS[] = "rtabmap_ros/GetNodesInRadius";
       u_radius.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
       this->radius = u_radius.real;
       offset += sizeof(this->radius);
+      union {
+        int32_t real;
+        uint32_t base;
+      } u_k;
+      u_k.base = 0;
+      u_k.base |= ((uint32_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      u_k.base |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1);
+      u_k.base |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2);
+      u_k.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
+      this->k = u_k.real;
+      offset += sizeof(this->k);
      return offset;
     }
 
-    const char * getType(){ return GETNODESINRADIUS; };
-    const char * getMD5(){ return "64a1b52a555d02582cfbac564065c33c"; };
+    virtual const char * getType() override { return GETNODESINRADIUS; };
+    virtual const char * getMD5() override { return "5e28a28a199cb5232f355c12c5a65418"; };
 
   };
 
@@ -167,14 +191,19 @@ static const char GETNODESINRADIUS[] = "rtabmap_ros/GetNodesInRadius";
       typedef geometry_msgs::Pose _poses_type;
       _poses_type st_poses;
       _poses_type * poses;
+      uint32_t distsSqr_length;
+      typedef float _distsSqr_type;
+      _distsSqr_type st_distsSqr;
+      _distsSqr_type * distsSqr;
 
     GetNodesInRadiusResponse():
-      ids_length(0), ids(NULL),
-      poses_length(0), poses(NULL)
+      ids_length(0), st_ids(), ids(nullptr),
+      poses_length(0), st_poses(), poses(nullptr),
+      distsSqr_length(0), st_distsSqr(), distsSqr(nullptr)
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       *(outbuffer + offset + 0) = (this->ids_length >> (8 * 0)) & 0xFF;
@@ -202,10 +231,27 @@ static const char GETNODESINRADIUS[] = "rtabmap_ros/GetNodesInRadius";
       for( uint32_t i = 0; i < poses_length; i++){
       offset += this->poses[i].serialize(outbuffer + offset);
       }
+      *(outbuffer + offset + 0) = (this->distsSqr_length >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (this->distsSqr_length >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (this->distsSqr_length >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (this->distsSqr_length >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->distsSqr_length);
+      for( uint32_t i = 0; i < distsSqr_length; i++){
+      union {
+        float real;
+        uint32_t base;
+      } u_distsSqri;
+      u_distsSqri.real = this->distsSqr[i];
+      *(outbuffer + offset + 0) = (u_distsSqri.base >> (8 * 0)) & 0xFF;
+      *(outbuffer + offset + 1) = (u_distsSqri.base >> (8 * 1)) & 0xFF;
+      *(outbuffer + offset + 2) = (u_distsSqri.base >> (8 * 2)) & 0xFF;
+      *(outbuffer + offset + 3) = (u_distsSqri.base >> (8 * 3)) & 0xFF;
+      offset += sizeof(this->distsSqr[i]);
+      }
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       uint32_t ids_lengthT = ((uint32_t) (*(inbuffer + offset))); 
@@ -242,11 +288,33 @@ static const char GETNODESINRADIUS[] = "rtabmap_ros/GetNodesInRadius";
       offset += this->st_poses.deserialize(inbuffer + offset);
         memcpy( &(this->poses[i]), &(this->st_poses), sizeof(geometry_msgs::Pose));
       }
+      uint32_t distsSqr_lengthT = ((uint32_t) (*(inbuffer + offset))); 
+      distsSqr_lengthT |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1); 
+      distsSqr_lengthT |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2); 
+      distsSqr_lengthT |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3); 
+      offset += sizeof(this->distsSqr_length);
+      if(distsSqr_lengthT > distsSqr_length)
+        this->distsSqr = (float*)realloc(this->distsSqr, distsSqr_lengthT * sizeof(float));
+      distsSqr_length = distsSqr_lengthT;
+      for( uint32_t i = 0; i < distsSqr_length; i++){
+      union {
+        float real;
+        uint32_t base;
+      } u_st_distsSqr;
+      u_st_distsSqr.base = 0;
+      u_st_distsSqr.base |= ((uint32_t) (*(inbuffer + offset + 0))) << (8 * 0);
+      u_st_distsSqr.base |= ((uint32_t) (*(inbuffer + offset + 1))) << (8 * 1);
+      u_st_distsSqr.base |= ((uint32_t) (*(inbuffer + offset + 2))) << (8 * 2);
+      u_st_distsSqr.base |= ((uint32_t) (*(inbuffer + offset + 3))) << (8 * 3);
+      this->st_distsSqr = u_st_distsSqr.real;
+      offset += sizeof(this->st_distsSqr);
+        memcpy( &(this->distsSqr[i]), &(this->st_distsSqr), sizeof(float));
+      }
      return offset;
     }
 
-    const char * getType(){ return GETNODESINRADIUS; };
-    const char * getMD5(){ return "c482b598f970eec6229687725ccf8844"; };
+    virtual const char * getType() override { return GETNODESINRADIUS; };
+    virtual const char * getMD5() override { return "1b8b2d45b8ca77eac8d3c9b89916ddbf"; };
 
   };
 

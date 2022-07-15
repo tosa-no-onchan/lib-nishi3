@@ -28,7 +28,7 @@ static const char GETNODEDATA[] = "rtabmap_ros/GetNodeData";
       _user_data_type user_data;
 
     GetNodeDataRequest():
-      ids_length(0), ids(NULL),
+      ids_length(0), st_ids(), ids(nullptr),
       images(0),
       scan(0),
       grid(0),
@@ -36,7 +36,7 @@ static const char GETNODEDATA[] = "rtabmap_ros/GetNodeData";
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       *(outbuffer + offset + 0) = (this->ids_length >> (8 * 0)) & 0xFF;
@@ -87,7 +87,7 @@ static const char GETNODEDATA[] = "rtabmap_ros/GetNodeData";
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       uint32_t ids_lengthT = ((uint32_t) (*(inbuffer + offset))); 
@@ -147,8 +147,8 @@ static const char GETNODEDATA[] = "rtabmap_ros/GetNodeData";
      return offset;
     }
 
-    const char * getType(){ return GETNODEDATA; };
-    const char * getMD5(){ return "0e8d18cf9b3249ab98f2d25e6071cc75"; };
+    virtual const char * getType() override { return GETNODEDATA; };
+    virtual const char * getMD5() override { return "0e8d18cf9b3249ab98f2d25e6071cc75"; };
 
   };
 
@@ -161,11 +161,11 @@ static const char GETNODEDATA[] = "rtabmap_ros/GetNodeData";
       _data_type * data;
 
     GetNodeDataResponse():
-      data_length(0), data(NULL)
+      data_length(0), st_data(), data(nullptr)
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       *(outbuffer + offset + 0) = (this->data_length >> (8 * 0)) & 0xFF;
@@ -179,7 +179,7 @@ static const char GETNODEDATA[] = "rtabmap_ros/GetNodeData";
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       uint32_t data_lengthT = ((uint32_t) (*(inbuffer + offset))); 
@@ -197,8 +197,8 @@ static const char GETNODEDATA[] = "rtabmap_ros/GetNodeData";
      return offset;
     }
 
-    const char * getType(){ return GETNODEDATA; };
-    const char * getMD5(){ return "ca91362b5ebbcff75240f9605058b84f"; };
+    virtual const char * getType() override { return GETNODEDATA; };
+    virtual const char * getMD5() override { return "abf78581c33506d2708879a849768fba"; };
 
   };
 

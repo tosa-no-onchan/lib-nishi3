@@ -29,12 +29,12 @@ namespace rtabmap_ros
     GlobalDescriptor():
       header(),
       type(0),
-      info_length(0), info(NULL),
-      data_length(0), data(NULL)
+      info_length(0), st_info(), info(nullptr),
+      data_length(0), st_data(), data(nullptr)
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
@@ -69,7 +69,7 @@ namespace rtabmap_ros
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
@@ -113,8 +113,8 @@ namespace rtabmap_ros
      return offset;
     }
 
-    const char * getType(){ return "rtabmap_ros/GlobalDescriptor"; };
-    const char * getMD5(){ return "cea16e5cbeb4de779e68853766f4772e"; };
+    virtual const char * getType() override { return "rtabmap_ros/GlobalDescriptor"; };
+    virtual const char * getMD5() override { return "cea16e5cbeb4de779e68853766f4772e"; };
 
   };
 

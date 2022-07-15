@@ -56,14 +56,14 @@ namespace rtabmap_ros
       depth(),
       rgb_compressed(),
       depth_compressed(),
-      key_points_length(0), key_points(NULL),
-      points_length(0), points(NULL),
-      descriptors_length(0), descriptors(NULL),
+      key_points_length(0), st_key_points(), key_points(nullptr),
+      points_length(0), st_points(), points(nullptr),
+      descriptors_length(0), st_descriptors(), descriptors(nullptr),
       global_descriptor()
     {
     }
 
-    virtual int serialize(unsigned char *outbuffer) const
+    virtual int serialize(unsigned char *outbuffer) const override
     {
       int offset = 0;
       offset += this->header.serialize(outbuffer + offset);
@@ -102,7 +102,7 @@ namespace rtabmap_ros
       return offset;
     }
 
-    virtual int deserialize(unsigned char *inbuffer)
+    virtual int deserialize(unsigned char *inbuffer) override
     {
       int offset = 0;
       offset += this->header.deserialize(inbuffer + offset);
@@ -153,8 +153,8 @@ namespace rtabmap_ros
      return offset;
     }
 
-    const char * getType(){ return "rtabmap_ros/RGBDImage"; };
-    const char * getMD5(){ return "affef6cc8804ffba98ce6ed6f1ca8942"; };
+    virtual const char * getType() override { return "rtabmap_ros/RGBDImage"; };
+    virtual const char * getMD5() override { return "affef6cc8804ffba98ce6ed6f1ca8942"; };
 
   };
 
