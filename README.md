@@ -7,3 +7,9 @@ Arduino Library for foxbot_core3.ino
 2. down load SparkFun_ICM-20948_ArduinoLibrary  
   $ cd ~/Arduino/lib-nishi3  
   $ git clone SparkFun_ICM-20948_ArduinoLibrary to here  
+    
+Update.    
+    
+    2022.7.15    
+        support ros noetic    
+            
