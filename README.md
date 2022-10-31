@@ -1,15 +1,21 @@
 # lib-nishi3  
-Arduino Library for foxbot_core3.ino  
+Arduino Library for ros2 foxy foxbot_core3.ino  
+  use micro-ROS for Arduino  
+  https://github.com/micro-ROS/micro_ros_arduino/tree/foxy  
   
 1. down load  
   $ cd ~/Arduino  
-  $ git clone https://github.com/tosa-no-onchan/lib-nishi3.git  
+  $ git clone -b foxy https://github.com/tosa-no-onchan/lib-nishi3.git  
+  $ move lib-nishi3 lib-foxbot_core3_r2  
+  
+  
 2. down load SparkFun_ICM-20948_ArduinoLibrary  
-  $ cd ~/Arduino/lib-nishi3  
+  $ cd ~/Arduino/lib-foxbot_core3_r2  
   $ git clone SparkFun_ICM-20948_ArduinoLibrary to here  
-    
+  $ git clone -b foxy https://github.com/micro-ROS/micro_ros_arduino.git  
+  
 Update.    
     
-    2022.7.15    
-        support ros noetic    
+    2022.10.30    
+        support ros2 foxy    
             
