@@ -12,4 +12,5 @@ Update.
     
     2022.7.15    
         support ros noetic    
-            
+    2022.10.30    
+        branch:foxy support ros2 foxy    
