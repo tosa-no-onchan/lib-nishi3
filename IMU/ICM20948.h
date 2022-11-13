@@ -18,7 +18,7 @@
 // 又は 
 // #define USE_FOXBOT
 
-//#define USE_FOXBOT
+#define USE_FOXBOT
 
 // for fooxbot_core3.ino
 #if defined(USE_FOXBOT)

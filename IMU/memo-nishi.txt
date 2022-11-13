@@ -1,0 +1,225 @@
+
+
+SPI モード
+
+https://smtengkapi.com/engineer-esp32-wroom32-spi
+
+
+ICM-20948 SPI の仕様
+1.Data is delivered MSB first and LSB last
+2.Data is latched on the rising edge of SCLK
+3.Data should be transitioned on the falling edge of SCLK
+4.The maximum frequency of SCLK is 7MHz
+5.SPI read and write operations are completed in 16 or more clock cycles (two or more bytes). 
+ The first byte contains the SPI Address, and the following byte(s) contain(s) the SPI data. The first bit of the first byte
+contains the Read/Write bit and indicates the Read (1) or Write (0) operation. The following 7 bits contain the
+Register Address. In cases of multiple-byte Read/Writes, data is two or more bytes:
+
+
+MPU-6500 SPI の仕様
+6.5 SPI INTERFACE
+1. Data is delivered MSB first and LSB last
+2. Data is latched on the rising edge of SCLK
+3. Data should be transitioned on the falling edge of SCLK
+4. The maximum frequency of SCLK is 1MHz
+5. SPI read and write operations are completed in 16 or more clock cycles (two or more bytes). 
+ The first byte contains the SPI Address, and the following byte(s) contain(s) the SPI data. The first bit of the first byte
+contains the Read/Write bit and indicates the Read (1) or Write (0) operation. The following 7 bits contain the
+Register Address. In cases of multiple-byte Read/Writes, data is two or more bytes:
+
+
+
+
+
+myICM.begin(CS_PIN, MPU_SPI); の処理内容の解析  2022.5.2
+
+
+/home/nishi/Arduino/lib-nishi3/SparkFun_ICM-20948_ArduinoLibrary/src/ICM_20948.cpp
+
+1.
+
+ICM_20948_Status_e ICM_20948_SPI::begin(uint8_t csPin, SPIClass &spiPort, uint32_t SPIFreq)
+{
+  if (SPIFreq > 7000000)
+    SPIFreq = 7000000; // Limit SPI frequency to 7MHz
+
+  // Associate
+  _spi = &spiPort;
+  _spisettings = SPISettings(SPIFreq, ICM_20948_SPI_DEFAULT_ORDER, ICM_20948_SPI_DEFAULT_MODE);
+  _cs = csPin;
+
+  // Set pinmodes
+  pinMode(_cs, OUTPUT);
+
+  // Set pins to default positions
+  digitalWrite(_cs, HIGH);
+
+  // _spi->begin(); // Moved into user's sketch
+
+  // 'Kickstart' the SPI hardware.
+  _spi->beginTransaction(_spisettings);
+  _spi->transfer(0x00);
+  _spi->endTransaction();
+
+  // Set up the serif
+  _serif.write = ICM_20948_write_SPI;
+  _serif.read = ICM_20948_read_SPI;
+  _serif.user = (void *)this; // refer to yourself in the user field
+
+  // Link the serif
+  _device._serif = &_serif;
+
+#if defined(ICM_20948_USE_DMP)
+  _device._dmp_firmware_available = true; // Initialize _dmp_firmware_available
+#else
+  _device._dmp_firmware_available = false; // Initialize _dmp_firmware_available
+#endif
+
+  _device._firmware_loaded = false; // Initialize _firmware_loaded
+  _device._last_bank = 255;         // Initialize _last_bank. Make it invalid. It will be set by the first call of ICM_20948_set_bank.
+  _device._last_mems_bank = 255;    // Initialize _last_mems_bank. Make it invalid. It will be set by the first call of inv_icm20948_write_mems.
+  _device._gyroSF = 0;              // Use this to record the GyroSF, calculated by inv_icm20948_set_gyro_sf
+  _device._gyroSFpll = 0;
+  _device._enabled_Android_0 = 0;      // Keep track of which Android sensors are enabled: 0-31
+  _device._enabled_Android_1 = 0;      // Keep track of which Android sensors are enabled: 32-
+  _device._enabled_Android_intr_0 = 0; // Keep track of which Android sensor interrupts are enabled: 0-31
+  _device._enabled_Android_intr_1 = 0; // Keep track of which Android sensor interrupts are enabled: 32-
+
+  // Perform default startup
+  // Do a minimal startupDefault if using the DMP. User can always call startupDefault(false) manually if required.
+  status = startupDefault(_device._dmp_firmware_available);  // startupDefault() をコール。
+  if (status != ICM_20948_Stat_Ok)
+  {
+    debugPrint(F("ICM_20948_SPI::begin: startupDefault returned: "));
+    debugPrintStatus(status);
+    debugPrintln(F(""));
+  }
+
+  return status;
+}
+
+
+
+2.
+ICM_20948_Status_e ICM_20948::startupDefault(bool minimal)
+{
+  ICM_20948_Status_e retval = ICM_20948_Stat_Ok;
+
+  retval = checkID();
+  if (retval != ICM_20948_Stat_Ok)
+  {
+    debugPrint(F("ICM_20948::startupDefault: checkID returned: "));
+    debugPrintStatus(retval);
+    debugPrintln(F(""));
+    status = retval;
+    return status;
+  }
+
+  retval = swReset();
+  if (retval != ICM_20948_Stat_Ok)
+  {
+    debugPrint(F("ICM_20948::startupDefault: swReset returned: "));
+    debugPrintStatus(retval);
+    debugPrintln(F(""));
+    status = retval;
+    return status;
+  }
+  delay(50);
+
+  retval = sleep(false);
+  if (retval != ICM_20948_Stat_Ok)
+  {
+    debugPrint(F("ICM_20948::startupDefault: sleep returned: "));
+    debugPrintStatus(retval);
+    debugPrintln(F(""));
+    status = retval;
+    return status;
+  }
+
+  retval = lowPower(false);
+  if (retval != ICM_20948_Stat_Ok)
+  {
+    debugPrint(F("ICM_20948::startupDefault: lowPower returned: "));
+    debugPrintStatus(retval);
+    debugPrintln(F(""));
+    status = retval;
+    return status;
+  }
+
+
+
+  retval = startupMagnetometer(minimal); // Pass the minimal startup flag to startupMagnetometer
+  if (retval != ICM_20948_Stat_Ok)
+  {
+    debugPrint(F("ICM_20948::startupDefault: startupMagnetometer returned: "));
+    debugPrintStatus(retval);
+    debugPrintln(F(""));
+    status = retval;
+    return status;
+  }
+
+  if (minimal) // Return now if minimal is true
+  {
+    debugPrintln(F("ICM_20948::startupDefault: minimal startup complete!"));
+    return status;
+  }
+
+  retval = setSampleMode((ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr), ICM_20948_Sample_Mode_Continuous); // options: ICM_20948_Sample_Mode_Continuous or ICM_20948_Sample_Mode_Cycled
+  if (retval != ICM_20948_Stat_Ok)
+  {
+    debugPrint(F("ICM_20948::startupDefault: setSampleMode returned: "));
+    debugPrintStatus(retval);
+    debugPrintln(F(""));
+    status = retval;
+    return status;
+  } // sensors: 	ICM_20948_Internal_Acc, ICM_20948_Internal_Gyr, ICM_20948_Internal_Mst
+
+  ICM_20948_fss_t FSS;
+  FSS.a = gpm2;   // (ICM_20948_ACCEL_CONFIG_FS_SEL_e)
+  FSS.g = dps250; // (ICM_20948_GYRO_CONFIG_1_FS_SEL_e)
+  retval = setFullScale((ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr), FSS);
+  if (retval != ICM_20948_Stat_Ok)
+  {
+    debugPrint(F("ICM_20948::startupDefault: setFullScale returned: "));
+    debugPrintStatus(retval);
+    debugPrintln(F(""));
+    status = retval;
+    return status;
+  }
+
+  ICM_20948_dlpcfg_t dlpcfg;
+  dlpcfg.a = acc_d473bw_n499bw;
+  dlpcfg.g = gyr_d361bw4_n376bw5;
+  retval = setDLPFcfg((ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr), dlpcfg);
+  if (retval != ICM_20948_Stat_Ok)
+  {
+    debugPrint(F("ICM_20948::startupDefault: setDLPFcfg returned: "));
+    debugPrintStatus(retval);
+    debugPrintln(F(""));
+    status = retval;
+    return status;
+  }
+
+  retval = enableDLPF(ICM_20948_Internal_Acc, false);
+  if (retval != ICM_20948_Stat_Ok)
+  {
+    debugPrint(F("ICM_20948::startupDefault: enableDLPF (Acc) returned: "));
+    debugPrintStatus(retval);
+    debugPrintln(F(""));
+    status = retval;
+    return status;
+  }
+
+  retval = enableDLPF(ICM_20948_Internal_Gyr, false);
+  if (retval != ICM_20948_Stat_Ok)
+  {
+    debugPrint(F("ICM_20948::startupDefault: enableDLPF (Gyr) returned: "));
+    debugPrintStatus(retval);
+    debugPrintln(F(""));
+    status = retval;
+    return status;
+  }
+
+  return status;
+}
+
